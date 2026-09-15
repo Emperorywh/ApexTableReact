@@ -7,7 +7,7 @@ nav:
 
 # 样式、插槽和偏好
 
-先引入 styles/structure.css，可选引入 styles/theme.css。JS 不注入样式和全局 reset。默认系统中文字体不需要外部下载。
+从默认入口导入 ApexTableReact 时自动加载结构样式与默认主题，无需额外导入 CSS。品牌外观通过 `style` props 中的公开主题变量配置，所有 demo 均使用同一组件入口。样式不包含全局 reset，默认系统中文字体不需要外部下载。
 
 颜色变量包括 --apex-table-bg/header-bg/text-color/muted-color/accent-color，状态变量包括 --apex-table-row-hover-bg/row-selected-bg/disabled-color/focus-color。边框、圆角、阴影、字体、间距和层级对应 --apex-table-border-color/radius/pinned-shadow/font-family/font-size/padding-inline/control-gap/icon-size/overlay-z-index。--apex-geometry-* 为只读输出。
 
@@ -33,7 +33,7 @@ slotProps.checkbox.controlProps 等可补充 className、非几何 style、ref �
 
 slots 接收 React 组件，支持组件内部 Hook、memo 和 forwardRef。建议在组件外定义稳定的插槽组件，避免每次父级渲染创建新组件类型导致控件卸载。复选框示例使用 memo 与布局副作用同步半选状态。
 
-插槽上下文容器属性为只读；其中的 table、row、column、cell 和 header 仍是原生对象，可以正常调用它们的方法。工具栏、复选框和事件补充分为三个示例；受控选择与外部 atom 也分别演示。
+插槽上下文容器属性为只读；其中的 table、row、column、cell 和 header 仍是原生对象，可以正常调用它们的方法。工具栏、复选框和事件补充分为三个示例；受控选择与实例 API 也分别演示。
 
 类型与运行时保护身份、状态、role、tabIndex、必需 aria 和几何。aria-describedby 去重合并。引用指向同一真实元素，支持 React 18 的 null 和 React 19 的清理返回值。
 
@@ -43,19 +43,19 @@ getPopupContainer 应选择主题作用域内的容器，或由业务给外部�
 
 locale 支持局部覆盖并回退简体中文。Localization 示例仅覆盖选择场景的英文文案，展示数量格式化与可访问名称函数。需要完整替换时，用 ApexLocale 声明完整对象。业务列名、菜单项和提示内容由业务自己翻译；加载、空态和错误在各自示例中演示。
 
-## 只加载结构样式
+## 通过 props 配置双主题
 
-以下独立页面从公开包仅导入结构 CSS，在同一页面展示两套消费方主题。独立文档框架避免其他 dumi 示例加载的默认主题影响结果。
+以下独立页面从 `apex-table-react` 导入组件，传入 `columns`、`data` 和 `style`，在同一页面展示两套品牌外观。组件自动加载默认结构和主题，示例不导入样式文件。
 
-<iframe src="/structure-only/index.html" title="只加载结构 CSS 的双主题示例" width="100%" height="720"></iframe>
+<iframe src="/structure-only/index.html" title="通过 props 配置双主题" width="100%" height="720"></iframe>
 
-源码位于 examples/structure-only，`pnpm docs:build` 自动生成该页面；构建元数据确认没有 theme.css。
+源码位于 examples/structure-only，`pnpm docs:build` 自动生成该页面并检查默认入口包含必要样式。目录和地址保留以兼容已有链接。
 
 ## 列偏好
 
 独立入口：apex-table-react/adapters/local-column-preferences。createLocalColumnPreferences 必须提供 namespace/userId/tenantId/tableId/schemaVersion，无多租户也明确 tenantId。
 
-工厂不访问存储；load({columns,initialState}) 接收允许的原生 leaf columns，返回四个原生布局切片。未受控业务调用原生 setters 应用；受控或外部 atom 由所有者接纳恢复结果。适配器不覆盖回调。
+工厂不访问存储；load({columns,initialState}) 接收允许的原生 leaf columns，返回四个原生布局切片。通过 `tableRef.current.getAllLeafColumns()` 获取列，再将恢复结果传入 `state` 和各个 `onColumn…Change` 回调。适配器不覆盖回调。
 
 save(state) 默认防抖 300ms，仅保存 columnOrder/columnVisibility/columnSizing/columnPinning。flush/cancel/clear/dispose 管理生命周期。load 后再订阅避免恢复写回，身份切换 dispose 取消旧待写任务。
 

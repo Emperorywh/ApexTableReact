@@ -3,10 +3,10 @@ import { resolve } from 'node:path';
 
 export default defineConfig({
   /*
-   * 文档中的 @ 与 TypeScript 路径映射保持一致，统一指向源码目录。
-   * 同时支持组件、类型和样式导入，避免依赖示例文件的目录层级。
+   * 文档使用正式包名导入组件及公开子入口，与开发者接入方式一致。
+   * 本地预览将包名映射到源码目录，示例无需修改导入即可展示最新实现。
    */
-  alias: { '@': resolve(__dirname, 'src') },
+  alias: { 'apex-table-react': resolve(__dirname, 'src') },
   /*
    * 文档沿用 dumi，示例引用正式源码并与运行时包分离。
    * 页面文案默认中文，组件名仍保留项目既有名称。

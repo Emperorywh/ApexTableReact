@@ -1,39 +1,38 @@
 import { useEffect, useRef, useState } from 'react';
-import { createColumnHelper, tableFeatures, useTable, columnOrderingFeature, columnPinningFeature, columnResizingFeature, columnSizingFeature, columnVisibilityFeature } from '@tanstack/react-table';
-import { ApexTable } from '@';
-import { createLocalColumnPreferences } from '@/adapters/local-column-preferences';
-import type { ColumnPreferenceSlices } from '@/adapters/local-column-preferences';
-import './demo.css';
-import '@/styles/structure.css';
-import '@/styles/theme.css';
+import { ApexTableReact } from 'apex-table-react';
+import { createLocalColumnPreferences } from 'apex-table-react/adapters/local-column-preferences';
+import type { ColumnPreferenceSlices } from 'apex-table-react/adapters/local-column-preferences';
+import type { ApexColumnDef, ApexTableInstance, ColumnOrderState, ColumnVisibilityState, ColumnSizingState, ColumnPinningState } from 'apex-table-react';
 
 /*
  * 本地偏好只保存列布局，使用显式保存和恢复展示适配器的基本接入。
- * 本示例独立声明数据、列和所需特性，源码引用统一使用 @。
+ * 列布局通过 state 和对应回调传入组件，存储适配器也来自本包公开入口。
  */
-const features = tableFeatures({ columnOrderingFeature, columnPinningFeature, columnResizingFeature, columnSizingFeature, columnVisibilityFeature });
 type Item = { id: string; name: string; stock: number };
 const data: Item[] = [
   { id: 'cup', name: '陶瓷杯', stock: 36 },
   { id: 'cloth', name: '亚麻桌布', stock: 12 },
   { id: 'vase', name: '玻璃花瓶', stock: 24 },
 ];
-const helper = createColumnHelper<typeof features, Item>();
-const columns = helper.columns([
-  helper.accessor('id', { header: '编号', size: 120 }),
-  helper.accessor('name', { header: '物品名称', size: 220, enableHiding: false }),
-  helper.accessor('stock', { header: '库存', size: 160 }),
-]);
+const columns: ApexColumnDef<Item>[] = [
+  { accessorKey: 'id', header: '编号', size: 120 },
+  { accessorKey: 'name', header: '物品名称', size: 220, enableHiding: false },
+  { accessorKey: 'stock', header: '库存', size: 160 },
+];
 export default function Preferences() {
   const [ready, setReady] = useState(false);
   const [notice, setNotice] = useState('正在恢复列布局');
   const preferences = useRef<ReturnType<typeof createLocalColumnPreferences> | null>(null);
-  const table = useTable({ features, data, columns, defaultColumn: { minSize: 80, maxSize: 400 } }, () => null);
+  const tableRef = useRef<ApexTableInstance<Item>>(null);
+  const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>({});
+  const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+  const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({ start: [], end: [] });
   const applyLayout = (layout: ColumnPreferenceSlices) => {
-    table.setColumnOrder(layout.columnOrder ?? []);
-    table.setColumnVisibility(layout.columnVisibility ?? {});
-    table.setColumnSizing(layout.columnSizing ?? {});
-    table.setColumnPinning(layout.columnPinning ?? { start: [], end: [] });
+    setColumnOrder(layout.columnOrder ?? []);
+    setColumnVisibility(layout.columnVisibility ?? {});
+    setColumnSizing(layout.columnSizing ?? {});
+    setColumnPinning(layout.columnPinning ?? { start: [], end: [] });
   };
   /*
    * 每次副作用建立时创建适配器，卸载时取消待写任务并释放引用。
@@ -47,17 +46,17 @@ export default function Preferences() {
     });
     preferences.current = instance;
     setNotice('已恢复布局；调整列设置后点击保存，刷新页面可再次恢复。');
-    applyLayout(instance.load({ columns: table.getAllLeafColumns() }));
+    if (tableRef.current) applyLayout(instance.load({ columns: tableRef.current.getAllLeafColumns() }));
     setReady(true);
     return () => { instance.dispose(); preferences.current = null; };
-  }, [table.store]);
+  }, []);
   const save = () => {
     setNotice('已保存当前列布局。');
     preferences.current?.save({
-      columnOrder: table.atoms.columnOrder.get(),
-      columnVisibility: table.atoms.columnVisibility.get(),
-      columnSizing: table.atoms.columnSizing.get(),
-      columnPinning: table.atoms.columnPinning.get(),
+      columnOrder,
+      columnVisibility,
+      columnSizing,
+      columnPinning,
     });
     preferences.current?.flush();
   };
@@ -66,12 +65,15 @@ export default function Preferences() {
     preferences.current?.clear();
     applyLayout({});
   };
-  return <div className="apex-demo">
-    <div className="apex-demo-query">
+  return <div>
+    <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
       <button type="button" disabled={!ready} onClick={save}>保存列布局</button>
       <button type="button" disabled={!ready} onClick={clear}>清除并恢复默认</button>
     </div>
-    <ApexTable table={table} height={300} columnSettingsEnabled />
+    <ApexTableReact columns={columns} data={data} tableRef={tableRef} defaultColumn={{ minSize: 80, maxSize: 400 }}
+      state={{ columnOrder, columnVisibility, columnSizing, columnPinning }}
+      onColumnOrderChange={setColumnOrder} onColumnVisibilityChange={setColumnVisibility}
+      onColumnSizingChange={setColumnSizing} onColumnPinningChange={setColumnPinning} height={300} columnSettingsEnabled />
     <p role="status">{notice}</p>
   </div>;
 }

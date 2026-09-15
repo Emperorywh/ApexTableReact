@@ -1,21 +1,16 @@
-import { createColumnHelper, tableFeatures, useTable } from '@tanstack/react-table';
-import { ApexTable } from '@';
-import '@/styles/structure.css';
-import '@/styles/theme.css';
+import { ApexTableReact } from 'apex-table-react';
+import type { ApexColumnDef } from 'apex-table-react';
 
 /*
  * 空数组会显示默认空态，无需额外注册特性或传递状态参数。
- * 本示例独立声明数据、列和所需特性，源码引用统一使用 @。
+ * 本示例直接传入列、数据和功能 props，组件自动管理实例并加载样式。
  */
-const features = tableFeatures({  });
 type Item = { name: string; stock: number };
 const data: Item[] = [];
-const helper = createColumnHelper<typeof features, Item>();
-const columns = helper.columns([
-  helper.accessor('name', { header: '物品名称' }),
-  helper.accessor('stock', { header: '库存' }),
-]);
+const columns: ApexColumnDef<Item>[] = [
+  { accessorKey: 'name', header: '物品名称' },
+  { accessorKey: 'stock', header: '库存' },
+];
 export default function Empty() {
-  const table = useTable({ features, data, columns }, () => null);
-  return <ApexTable table={table} height={260} />;
+  return <ApexTableReact columns={columns} data={data} height={260} />;
 }

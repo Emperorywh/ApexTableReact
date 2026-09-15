@@ -1,19 +1,19 @@
 ---
-title: ApexTable 表格
+title: ApexTableReact 表格
 group:
   title: 组件
   order: 1
 ---
 
-# ApexTable
+# ApexTableReact
 
-用原生 `useTable` 管理数据与状态，用 ApexTable 渲染表格。下面按由简到繁的顺序排列，每个示例只介绍一个主题。
+所有场景都直接给 `ApexTableReact` 传入 `columns`、`data` 和功能 props，组件内部管理实例并自动加载样式。开发者只需使用 React 与本包，无需导入 TanStack、其他第三方库或 CSS。下面按由简到繁的顺序排列，每个示例只介绍一个主题。
 
 ## 基础渲染
 
 ### 1. 最简单的本地数据渲染
 
-三条静态数据、两列和一个原生 `useTable` 实例。复制这个示例即可开始。
+三条静态数据、两列普通对象，无需导入 TanStack API 或样式。复制这个示例即可开始。
 
 <code src="../../docs/demos/Basic.tsx"></code>
 
@@ -51,7 +51,7 @@ group:
 
 ### 7. 本地分页
 
-36 条本地数据交给原生分页行模型，尝试翻页和更改每页条数。
+传入 pagination 和 initialState，组件自动分页处理 36 条本地数据，尝试翻页和更改每页条数。
 
 <code src="../../docs/demos/LocalPagination.tsx"></code>
 
@@ -97,7 +97,7 @@ group:
 
 ### 14. 品牌主题
 
-通过表格根节点的 CSS 变量覆盖颜色、字体和圆角。仅加载结构 CSS 的独立示例见 [主题与扩展](/customization)。
+通过 style props 中的主题变量覆盖颜色、字体和圆角，无需导入 CSS。独立双主题示例见 [主题与扩展](/customization)。
 
 <code src="../../docs/demos/Customization.tsx"></code>
 
@@ -127,15 +127,15 @@ group:
 
 <code src="../../docs/demos/ControlledSelection.tsx"></code>
 
-### 19. 外部 atom
+### 19. 实例 API
 
-将选择状态交给外部 atom，按钮和表格共同修改同一份状态。
+传入 tableRef，由组件提供实例；按钮调用 setRowSelection 和 resetRowSelection，方法名称与 TanStack 一致。
 
 <code src="../../docs/demos/NativeCompatibility.tsx"></code>
 
-### 20. 自定义表格 Hook
+### 20. 复用表格 props
 
-通过原生 `createTableHook` 创建项目自己的 Hook，其实例可直接交给 ApexTable。
+项目 Hook 组合列、数据和受控状态 props，再统一传给 ApexTableReact，实例生命周期由组件管理。
 
 <code src="../../docs/demos/TableHook.tsx"></code>
 
@@ -147,7 +147,7 @@ group:
 
 ### 22. 服务端分页
 
-模拟 500 毫秒请求延迟，接口返回当前页数据与总数。切页立即显示加载态，旧任务会在查询变化时取消。
+只传 `request` 即可接入服务端分页，无需维护数据、总数、分页回调或加载状态。示例模拟 500 毫秒接口延迟；组件在切页时立即显示加载态并忽略旧响应，请求失败时提供重试。
 
 <code src="../../docs/demos/ProductTable.tsx"></code>
 

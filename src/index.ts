@@ -1,8 +1,7 @@
 /*
- * 仅导出表格界面及扩展类型，不重新导出或封装原生数据协议。
- * 样式由消费方显式引入，存储适配器使用独立入口。
+ * 默认入口自动加载结构样式和主题，基础接入无需额外导入 CSS。
+ * 无默认样式的入口单独导出，供完整自定义主题的项目使用。
  */
-export { ApexTable } from './ApexTable';
-export { ApexMenu, ApexTooltip } from './components/overlays';
-export { zhCN } from './locale';
-export type * from './types';
+import './styles/structure.css';
+import './styles/theme.css';
+export * from './unstyled';

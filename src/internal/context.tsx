@@ -16,6 +16,12 @@ export interface UIContextValue {
   viewport: RefObject<HTMLDivElement | null>;
   getPopupContainer?: () => HTMLElement;
   closeSignal?: object;
+  /*
+   * 固定特性集合不代表界面已启用对应能力。
+   * 子控件共用实际启用标记，连续列表不会出现分页语义或空选择摘要。
+   */
+  paginationEnabled?: boolean;
+  selectionEnabled?: boolean;
 }
 export const UIContext = createContext<UIContextValue>({ locale: zhCN, slots: {}, slotProps: {}, root: { current: null }, viewport: { current: null } });
 export function useUI() { return useContext(UIContext); }

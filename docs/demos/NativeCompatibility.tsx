@@ -1,36 +1,29 @@
-import { useState } from 'react';
-import { createColumnHelper, tableFeatures, useTable, rowSelectionFeature } from '@tanstack/react-table';
-import { ApexTable } from '@';
-import { createAtom } from '@tanstack/store';
-import type { RowSelectionState } from '@tanstack/react-table';
-import './demo.css';
-import '@/styles/structure.css';
-import '@/styles/theme.css';
+import { useRef } from 'react';
+import { ApexTableReact } from 'apex-table-react';
+import type { ApexColumnDef, ApexTableInstance } from 'apex-table-react';
 
 /*
- * 选择状态保存在外部 atom，页面按钮与表格复选框共同更新该原生状态。
- * 本示例独立声明数据、列和所需特性，源码引用统一使用 @。
+ * tableRef 由组件填充，外部按钮直接调用与 TanStack 同名的实例方法。
+ * 实例和状态仍由组件管理，无需在业务侧创建 atom 或导入第三方库。
  */
-const features = tableFeatures({ rowSelectionFeature });
 type Item = { id: string; name: string; stock: number };
 const data: Item[] = [
   { id: 'cup', name: '陶瓷杯', stock: 36 },
   { id: 'cloth', name: '亚麻桌布', stock: 12 },
   { id: 'vase', name: '玻璃花瓶', stock: 24 },
 ];
-const helper = createColumnHelper<typeof features, Item>();
-const columns = helper.columns([
-  helper.accessor('name', { header: '物品名称' }),
-  helper.accessor('stock', { header: '库存' }),
-]);
+const columns: ApexColumnDef<Item>[] = [
+  { accessorKey: 'name', header: '物品名称' },
+  { accessorKey: 'stock', header: '库存' },
+];
 export default function NativeCompatibility() {
-  const [rowSelection] = useState(() => createAtom<RowSelectionState>({ cup: true }));
-  const table = useTable({ features, data, columns, getRowId: (row) => row.id, atoms: { rowSelection } }, () => null);
-  return <div className="apex-demo">
-    <div className="apex-demo-query">
-      <button type="button" onClick={() => rowSelection.set({ cloth: true })}>通过 atom 选择桌布</button>
-      <button type="button" onClick={() => rowSelection.set({})}>通过 atom 清空</button>
+  const tableRef = useRef<ApexTableInstance<Item>>(null);
+  return <div>
+    <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+      <button type="button" onClick={() => tableRef.current?.setRowSelection({ cloth: true })}>通过 API 选择桌布</button>
+      <button type="button" onClick={() => tableRef.current?.resetRowSelection(true)}>通过 API 清空</button>
     </div>
-    <ApexTable table={table} height={290} showSelectionColumn />
+    <ApexTableReact columns={columns} data={data} getRowId={(row) => row.id} tableRef={tableRef}
+      initialState={{ rowSelection: { cup: true } }} height={290} showSelectionColumn />
   </div>;
 }

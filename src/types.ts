@@ -1,4 +1,5 @@
-import type { Cell, CellData, Column, Header, PaginationState, ReactTable, Row, RowData, RowSelectionState, TableFeatures, TableState } from '@tanstack/react-table';
+import type { Cell, CellData, Column, ColumnDef, Header, PaginationState, ReactTable, Row, RowData, RowSelectionState, TableFeatures, TableOptions, TableState } from '@tanstack/react-table';
+import type { managedFeatures } from './internal/features';
 import type { ButtonHTMLAttributes, ComponentPropsWithRef, ComponentType, CSSProperties, HTMLAttributes, InputHTMLAttributes, MouseEvent, ReactNode, Ref, SelectHTMLAttributes } from 'react';
 
 /*
@@ -23,6 +24,11 @@ declare module '@tanstack/react-table' {
   }
 }
 export type ApexDensity = 'compact' | 'standard' | 'comfortable';
+/*
+ * 根节点允许直接传入公开主题变量，品牌示例无需加载额外样式文件。
+ * 普通样式仍沿用 React 的属性类型，几何输出变量不属于公开输入。
+ */
+export type ApexTableStyle = CSSProperties & { [K in `--apex-table-${string}`]?: string | number };
 export type ApexTrack = boolean | { size?: number; sticky?: false | 'start' | 'end' };
 export interface ApexTableRef {
   focus(): void;
@@ -164,7 +170,7 @@ export interface ApexTableProps<F extends TableFeatures, D extends RowData, S = 
   showSelectionColumn?: ApexTrack;
   showRowNumber?: ApexTrack;
   columnSettingsEnabled?: boolean;
-  pagination?: false | { pageSizeOptions?: number[] };
+  pagination?: boolean | { pageSizeOptions?: number[] };
   loading?: boolean;
   error?: unknown;
   onRetry?(): void;
@@ -174,7 +180,52 @@ export interface ApexTableProps<F extends TableFeatures, D extends RowData, S = 
   locale?: Partial<ApexLocale>;
   name?: string;
   className?: string;
-  style?: CSSProperties;
+  style?: ApexTableStyle;
   onDiagnostic?(diagnostic: ApexDiagnostic): void;
   getPopupContainer?(): HTMLElement;
 }
+
+/*
+ * 数据模式复用实际注册的原生特性类型，列回调和状态回调保留完整推断。
+ * 对外直接提供原生命名的选项，实例构建与第三方状态容器留在组件内部。
+ */
+export type ApexTableFeatures = typeof managedFeatures;
+export type ApexColumnDef<D extends RowData, V extends CellData = CellData> = ColumnDef<ApexTableFeatures, D, V>;
+export type ApexTableInstance<D extends RowData> = ReactTable<ApexTableFeatures, D, null>;
+export type ApexTableState = TableState<ApexTableFeatures>;
+export type ApexTableSlots<D extends RowData> = ApexSlots<ApexTableFeatures, D, null>;
+type ApexTableReactBaseProps<D extends RowData> = Omit<ApexTableProps<ApexTableFeatures, D, null>, 'table'> & Omit<TableOptions<ApexTableFeatures, D>, 'features' | 'atoms' | 'mergeOptions' | 'key' | 'data'> & {
+  table?: never;
+  tableRef?: Ref<ApexTableInstance<D>>;
+};
+/*
+ * 请求模式沿用从零开始的原生页码，取消信号可直接传给 fetch。
+ * 接口一次返回当前页和准确总数，组件统一管理请求生命周期。
+ */
+export type ApexTableRequestParams = PaginationState & { signal: AbortSignal };
+export interface ApexTableRequestResult<D extends RowData> { data: D[]; rowCount: number }
+export type ApexTableRequest<D extends RowData> = (params: ApexTableRequestParams) => Promise<ApexTableRequestResult<D>>;
+export type ApexTableReactRequestProps<D extends RowData> = Omit<ApexTableReactBaseProps<D>, 'rowCount' | 'pageCount' | 'manualPagination' | 'loading' | 'error' | 'onRetry'> & {
+  request: ApexTableRequest<D>;
+  data?: never;
+  rowCount?: never;
+  pageCount?: never;
+  manualPagination?: never;
+  loading?: never;
+  error?: never;
+  onRetry?: never;
+};
+/*
+ * 本地数据和自动请求是互斥的数据来源，避免外部状态覆盖请求结果。
+ * 原生实例入口同样禁止混入 request，保留已有数据模式的类型名称。
+ */
+export type ApexTableReactLocalProps<D extends RowData> = ApexTableReactBaseProps<D> & { data: D[]; request?: never };
+export type ApexTableReactDataProps<D extends RowData> = ApexTableReactLocalProps<D> | ApexTableReactRequestProps<D>;
+export type ApexTableReactProps<D extends RowData, F extends TableFeatures = ApexTableFeatures, S = TableState<F>> = ApexTableReactDataProps<D> | (ApexTableProps<F, D, S> & { columns?: never; data?: never; request?: never; tableRef?: never });
+export type ApexTableReactRef = ApexTableRef;
+
+/*
+ * 常用状态及更新函数类型从组件包直接导出，业务无需导入底层依赖。
+ * 保留 TanStack 的类型名称和更新器语义，React 状态 setter 可直接作为回调。
+ */
+export type { ColumnFiltersState, ColumnOrderState, ColumnPinningState, ColumnSizingState, ColumnVisibilityState, OnChangeFn, PaginationState, RowSelectionState, SortingState, Updater } from '@tanstack/react-table';

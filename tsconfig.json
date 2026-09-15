@@ -19,6 +19,12 @@
     "baseUrl": "./",
     "paths": {
       /*
+       * 文档示例按公开包名检查组件和适配器类型，与文档构建的源码映射保持一致。
+       * 仅声明示例所需的公开入口，其他子路径继续按包的 exports 解析。
+       */
+      "apex-table-react": ["src/index.ts"],
+      "apex-table-react/adapters/local-column-preferences": ["src/adapters/local-column-preferences.ts"],
+      /*
        * @ 统一指向源码目录，支持入口导入与目录内文件导入。
        * father 构建会读取此映射，文档构建同步使用相同别名。
        */

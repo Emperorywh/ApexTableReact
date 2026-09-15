@@ -1,41 +1,32 @@
-import { useEffect, useState } from 'react';
-import { createColumnHelper, tableFeatures, useTable, rowPaginationFeature } from '@tanstack/react-table';
-import { ApexTable } from '@';
-import type { PaginationState } from '@tanstack/react-table';
-import '@/styles/structure.css';
-import '@/styles/theme.css';
+import { ApexTableReact } from 'apex-table-react';
+import type { ApexColumnDef } from 'apex-table-react';
 
 /*
- * 服务端分页只注册分页状态，模拟接口负责截取当前页并返回准确总数。
- * 本示例独立声明数据、列和所需特性，源码引用统一使用 @。
+ * request 返回当前页和准确总数，组件自动管理分页、加载和错误重试。
+ * 模拟数据仅用于演示，实际业务可在 request 中调用自己的分页接口。
  */
-const features = tableFeatures({ rowPaginationFeature });
 type Item = { id: string; name: string; stock: number };
 const inventory: Item[] = Array.from({ length: 53 }, (_, index) => ({ id: String(index), name: `商品 ${index + 1}`, stock: 100 - index }));
-const helper = createColumnHelper<typeof features, Item>();
-const columns = helper.columns([
-  helper.accessor('name', { header: '物品名称' }),
-  helper.accessor('stock', { header: '库存' }),
-]);
+const columns: ApexColumnDef<Item>[] = [
+  { accessorKey: 'name', header: '物品名称' },
+  { accessorKey: 'stock', header: '库存' },
+];
 export default function ProductTable() {
-  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 5 });
-  const [result, setResult] = useState<{ data: Item[]; rowCount: number; query: PaginationState | null }>({ data: [], rowCount: 0, query: null });
-  const loading = result.query !== pagination;
   /*
-   * 定时器模拟接口延迟；分页变化或组件卸载时取消旧任务。
-   * 当前页数据与总数一起提交，用查询引用确保切页时立即显示加载态。
+   * 内联请求函数无需 useCallback，重新渲染不会重复加载。
+   * 页码从零开始，初始页大小通过 initialState 配置。
    */
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const start = pagination.pageIndex * pagination.pageSize;
-      setResult({ data: inventory.slice(start, start + pagination.pageSize), rowCount: inventory.length, query: pagination });
-    }, 500);
-    return () => window.clearTimeout(timer);
-  }, [pagination]);
-  const table = useTable({
-    features, columns, data: result.data, rowCount: result.rowCount,
-    getRowId: (row) => row.id, manualPagination: true,
-    state: { pagination }, onPaginationChange: setPagination,
-  }, () => null);
-  return <ApexTable table={table} height={380} loading={loading} pagination={{ pageSizeOptions: [5, 10, 20] }} />;
+  return <ApexTableReact columns={columns} getRowId={(row) => row.id} height={380}
+    request={async ({ pageIndex, pageSize }) => {
+      /*
+       * 定时器仅用于模拟接口延迟，由 resolve 完成等待。
+       * 执行器不返回定时器编号，避免返回 Promise 不会使用的值。
+       */
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 500);
+      });
+      const start = pageIndex * pageSize;
+      return { data: inventory.slice(start, start + pageSize), rowCount: inventory.length };
+    }}
+    initialState={{ pagination: { pageIndex: 0, pageSize: 5 } }} pagination={{ pageSizeOptions: [5, 10, 20] }} />;
 }

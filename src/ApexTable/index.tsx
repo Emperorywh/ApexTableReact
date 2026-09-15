@@ -1,14 +1,21 @@
 import { forwardRef, memo, useCallback, useEffect, useId, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ForwardedRef, ReactElement, RefAttributes } from 'react';
 import type { Cell, Header, RowData, TableFeatures, TableState } from '@tanstack/react-table';
+import { makeStateUpdater, useTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import type { ApexDensity, ApexDiagnostic, ApexRootDOM, ApexTableProps, ApexTableRef } from '../types';
+/*
+ * 请求入口复用数据入口的渲染与实例管理，类型分别约束各自的数据来源。
+ * 对外签名仍统一使用数据模式联合类型，保持行类型自动推断。
+ */
+import type { ApexDensity, ApexDiagnostic, ApexRootDOM, ApexTableProps, ApexTableReactDataProps, ApexTableReactLocalProps, ApexTableReactRequestProps, ApexTableInstance, ApexTableRef } from '../types';
+import { useRequestProps } from '../internal/request';
 import { zhCN } from '../locale';
 import { UIContext, useUI } from '../internal/context';
 import { diagnostic, focusWithoutScroll, hasProtectedProps, isInteractive, mergeDOM } from '../internal/dom';
 import { calculateLayout, trackStyle } from '../internal/layout';
 import type { Track } from '../internal/layout';
 import { columnLabel } from '../internal/runtime';
+import { managedFeatures } from '../internal/features';
 import type { RuntimeProps, RuntimeRow, RuntimeTable } from '../internal/runtime';
 import { HeaderCheckbox, RowCheckbox, SelectionSummary } from '../components/selection';
 import { ResizeHandle } from '../components/resize';
@@ -52,7 +59,11 @@ function HeaderCell({ table, track, header, index, tableId }: { table: RuntimeTa
   const iconProps = mergeDOM({ 'aria-hidden': true as const, className: 'apex-table-sort-icon' }, slotProps.sortIcon?.rootProps);
   const icon = slots.sortIcon ? <slots.sortIcon direction={direction} rootProps={iconProps} /> : <span {...iconProps}>{direction === 'asc' ? '↑' : direction === 'desc' ? '↓' : '↕'}</span>;
   const rootProps = mergeDOM<ApexRootDOM>({ className: 'apex-table-header-content' }, slotProps.headerContent?.rootProps);
-  const sortButtonProps = mergeDOM({ type: 'button' as const, className: 'apex-table-sort-button', disabled: !sortable, 'aria-label': locale.sortColumn(columnLabel(column)), onClick: () => column.toggleSorting?.(undefined, false) }, slotProps.headerContent?.sortButtonProps);
+  /*
+   * 使用原生排序事件处理器，尊重 enableMultiSort 和 isMultiSortEvent 配置。
+   * 默认数据模式关闭多列排序，显式开启后可通过组合键追加排序列。
+   */
+  const sortButtonProps = mergeDOM({ type: 'button' as const, className: 'apex-table-sort-button', disabled: !sortable, 'aria-label': locale.sortColumn(columnLabel(column)), onClick: column.getToggleSortingHandler?.() }, slotProps.headerContent?.sortButtonProps);
   const children = <>{header ? <table.FlexRender header={header} /> : columnLabel(column)}{sortable && icon}</>;
   return <th ref={element} role="columnheader" scope="col" id={`${tableId}-col-${index}`} aria-colindex={index + 1} aria-sort={direction === 'asc' ? 'ascending' : direction === 'desc' ? 'descending' : sortable ? 'none' : undefined} className="apex-table-header-cell" data-column-id={column.id} data-pinned={track.sticky || undefined} data-align={column.columnDef.meta?.apex?.align} style={trackStyle(track)}>
     {slots.headerContent && header ? <slots.headerContent {...{ table, header, column, locale, rootProps, sortButtonProps, sortable, children }} /> : <div {...rootProps}>{sortable ? <button {...sortButtonProps} type="button">{children}</button> : children}</div>}
@@ -111,10 +122,15 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
   const slots = props.slots ?? emptySlots;
   const slotProps = props.slotProps ?? emptySlotProps;
   const closeSignal = useMemo(() => ({}), [model.sorting, model.columnFilters, model.globalFilter, model.pagination?.pageIndex, model.pagination?.pageSize]);
-  const ui = useMemo(() => ({ root, viewport, locale, slots, slotProps, closeSignal, getPopupContainer: props.getPopupContainer }), [locale, slots, slotProps, closeSignal, props.getPopupContainer]);
+  /*
+   * 分页和选择按数据模式的实际配置显示，原生实例仍保留能力探测。
+   * 同一标记传递到选择摘要与全选控件，避免基础列表受到已安装特性的影响。
+   */
+  const hasPagination = props.paginationEnabled ?? (typeof table.getPaginatedRowModel === 'function' && typeof table.getPageCount === 'function');
+  const hasSelection = props.selectionEnabled ?? !!table.atoms.rowSelection;
+  const ui = useMemo(() => ({ root, viewport, locale, slots, slotProps, closeSignal, getPopupContainer: props.getPopupContainer, paginationEnabled: hasPagination, selectionEnabled: hasSelection }), [locale, slots, slotProps, closeSignal, props.getPopupContainer, hasPagination, hasSelection]);
   const rowModel = table.getRowModel();
   const rows = rowModel.rows;
-  const hasPagination = typeof table.getPaginatedRowModel === 'function' && typeof table.getPageCount === 'function';
   const rawOverscan = typeof props.virtualization === 'object' ? props.virtualization.overscan ?? 8 : 8;
   const validOverscan = Number.isInteger(rawOverscan) && rawOverscan >= 0;
   const overscan = validOverscan ? rawOverscan : 8;
@@ -133,7 +149,7 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
   const headers = table.getHeaderGroups();
   const nestedRows = useMemo(() => coreRows.some((row) => row.subRows?.length), [coreRows]);
   const unsupported = headers.length > 1 || nestedRows || !!table.atoms.grouping?.get()?.length;
-  const badPagination = model.pagination && (!Number.isInteger(model.pagination.pageIndex) || model.pagination.pageIndex < 0 || !Number.isInteger(model.pagination.pageSize) || model.pagination.pageSize < 1);
+  const badPagination = hasPagination && model.pagination && (!Number.isInteger(model.pagination.pageIndex) || model.pagination.pageIndex < 0 || !Number.isInteger(model.pagination.pageSize) || model.pagination.pageSize < 1);
   const invalid = !validHeight || !validOverscan || tracks.some((track) => !Number.isFinite(track.size) || track.size <= 0) || (typeof props.height === 'number' && (!Number.isFinite(props.height) || props.height <= 0));
   const unmeasurable = dimensions.measured && dimensions.width > 0 && dimensions.height <= 44;
   /*
@@ -185,7 +201,7 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
   useLayoutEffect(() => { virtualizer.measure(); }, [safeHeight, virtualizer]);
   useEffect(() => { closeSettings(); }, [table.store, closeSettings]);
   useEffect(() => {
-    const report = props.onDiagnostic ?? ((event: ApexDiagnostic) => console.warn(`ApexTable: ${event.message}`));
+    const report = props.onDiagnostic ?? ((event: ApexDiagnostic) => console.warn(`ApexTableReact: ${event.message}`));
     if (errorCode) report(diagnostic(errorCode, locale[errorCode]));
     if (!virtual && rows.length > 1000) report(diagnostic('virtualizationDisabled', locale.virtualizationDisabled));
     if (hasProtectedProps(slotProps)) report(diagnostic('protectedProp', locale.protectedProp));
@@ -212,7 +228,7 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
    * 顶部只在存在自定义工具栏或备用设置入口时占用高度。
    */
   const showPagination = props.pagination !== false && hasPagination;
-  const nativeOffset = table.options.manualPagination && model.pagination ? model.pagination.pageIndex * model.pagination.pageSize : hasPagination && model.pagination ? model.pagination.pageIndex * model.pagination.pageSize : 0;
+  const nativeOffset = hasPagination && model.pagination ? model.pagination.pageIndex * model.pagination.pageSize : 0;
   const totalRows = unavailable ? undefined : hasPagination ? table.getPageCount() < 0 ? undefined : table.getRowCount() : rows.length;
   const headerMap = new Map(headers.flatMap((group) => group.headers).map((header) => [header.column.id, header]));
   return <UIContext.Provider value={ui}>
@@ -242,16 +258,104 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
         </table>
         {(unavailable || !rows.length || !hasColumns) && <BodyState props={props} error={configError} filtered={filtered} rows={safeHeight} height={dimensions.height} />}
       </div>
-      {showPagination ? <Pagination table={table} unavailable={unavailable} pageSizeOptions={props.pagination ? props.pagination.pageSizeOptions : undefined} /> : table.atoms.rowSelection && <div className="apex-table-pagination"><SelectionSummary table={table} /></div>}
+      {showPagination ? <Pagination table={table} unavailable={unavailable} pageSizeOptions={typeof props.pagination === 'object' ? props.pagination.pageSizeOptions : undefined} /> : hasSelection && <div className="apex-table-pagination"><SelectionSummary table={table} /></div>}
     </div>
   </UIContext.Provider>;
 }
-function ApexTableImpl(props: RuntimeProps, ref: ForwardedRef<ApexTableRef>) {
-  return <props.table.Subscribe selector={selectModelState}>{(model) => <Surface props={props} model={model} imperativeRef={ref} />}</props.table.Subscribe>;
+/*
+ * 两种接入方式共用原生状态订阅和界面渲染，避免重复实现布局逻辑。
+ * 引用继续传递到实际表格，保留聚焦与滚动定位能力。
+ */
+function NativeTable({ props, imperativeRef }: { props: RuntimeProps; imperativeRef: ForwardedRef<ApexTableRef> }) {
+  return <props.table.Subscribe selector={selectModelState}>{(model) => <Surface props={props} model={model} imperativeRef={imperativeRef} />}</props.table.Subscribe>;
 }
 
 /*
- * forwardRef 在 React 18 与 19 均可用，公开调用签名保留三项原生泛型。
- * 内部转换不创建新实例，传给所有插槽的仍是调用方传入的 table。
+ * 数据模式内置本地行模型与常用特性，所有原生选项直接由 props 提交。
+ * 未配置分页时保留连续列表，服务端模式使用原生 manual 选项跳过本地计算。
+ * 回调未提供时使用原生状态更新器，移除受控配置后也能恢复内部状态管理。
  */
-export const ApexTable = forwardRef(ApexTableImpl) as <F extends TableFeatures, D extends RowData, S = TableState<F>>(props: ApexTableProps<F, D, S> & RefAttributes<ApexTableRef>) => ReactElement;
+const managedOptionDefaults = {
+  state: undefined, initialState: undefined, defaultColumn: undefined, getRowId: undefined, getSubRows: undefined,
+  meta: undefined, renderFallbackValue: null, autoResetAll: undefined, autoResetPageIndex: undefined, autoResetSorting: false,
+  enableColumnFilters: true, enableFilters: true, filterFromLeafRows: false, maxLeafRowFilterDepth: 100,
+  enableColumnPinning: true, enableHiding: true, enableGlobalFilter: true, globalFilterFn: 'auto',
+  columnResizeMode: 'onEnd', columnResizeDirection: 'ltr', pageCount: undefined, rowCount: undefined,
+  enableRowRangeSelection: true, enableMultiRowSelection: true, enableSubRowSelection: true,
+  enableMultiRemove: true, enableSortingRemoval: true, maxMultiSortColCount: undefined, sortDescFirst: undefined,
+} satisfies Partial<ApexTableReactDataProps<RowData>>;
+
+/*
+ * 请求结果进入此组件前已转换为普通数据 props，原生实例无需感知异步请求。
+ * 本地与外部手动分页仍直接使用原来的选项管理路径。
+ */
+function ManagedTable({ props, imperativeRef }: { props: ApexTableReactLocalProps<RowData>; imperativeRef: ForwardedRef<ApexTableRef> }) {
+  const { tableRef, ...options } = props;
+  const paginationEnabled = !!props.pagination || !!props.manualPagination || !!props.state?.pagination || !!props.initialState?.pagination;
+  const selectionEnabled = !!props.showSelectionColumn || !!props.enableRowSelection;
+  const table: ApexTableInstance<RowData> = useTable({
+    ...managedOptionDefaults,
+    ...options,
+    features: managedFeatures,
+    /*
+     * 原生 Hook 合并历史选项；每次补齐默认值，移除 props 后不保留旧权限或总数。
+     * 原生默认判定延迟到交互时读取实例，保持全局过滤和组合键行为一致。
+     */
+    getColumnCanGlobalFilter: props.getColumnCanGlobalFilter ?? ((column) => managedFeatures.globalFilteringFeature.getDefaultTableOptions!(table)!.getColumnCanGlobalFilter!(column)),
+    isMultiSortEvent: props.isMultiSortEvent ?? ((event) => managedFeatures.rowSortingFeature.getDefaultTableOptions!(table)!.isMultiSortEvent!(event)),
+    isRowRangeSelectionEvent: props.isRowRangeSelectionEvent ?? ((event) => managedFeatures.rowSelectionFeature.getDefaultTableOptions!(table)!.isRowRangeSelectionEvent!(event)),
+    onSortingChange: props.onSortingChange ?? ((updater) => makeStateUpdater('sorting', table)(updater)),
+    onColumnFiltersChange: props.onColumnFiltersChange ?? ((updater) => makeStateUpdater('columnFilters', table)(updater)),
+    onGlobalFilterChange: props.onGlobalFilterChange ?? ((updater) => makeStateUpdater('globalFilter', table)(updater)),
+    onPaginationChange: props.onPaginationChange ?? ((updater) => makeStateUpdater('pagination', table)(updater)),
+    onRowSelectionChange: props.onRowSelectionChange ?? ((updater) => makeStateUpdater('rowSelection', table)(updater)),
+    onColumnOrderChange: props.onColumnOrderChange ?? ((updater) => makeStateUpdater('columnOrder', table)(updater)),
+    onColumnVisibilityChange: props.onColumnVisibilityChange ?? ((updater) => makeStateUpdater('columnVisibility', table)(updater)),
+    onColumnSizingChange: props.onColumnSizingChange ?? ((updater) => makeStateUpdater('columnSizing', table)(updater)),
+    onColumnPinningChange: props.onColumnPinningChange ?? ((updater) => makeStateUpdater('columnPinning', table)(updater)),
+    onColumnResizingChange: props.onColumnResizingChange ?? ((updater) => makeStateUpdater('columnResizing', table)(updater)),
+    enableSorting: props.enableSorting ?? false,
+    enableMultiSort: props.enableMultiSort ?? false,
+    enableRowSelection: props.enableRowSelection ?? !!props.showSelectionColumn,
+    enableColumnResizing: props.enableColumnResizing ?? !!props.columnSettingsEnabled,
+    manualPagination: props.manualPagination ?? !paginationEnabled,
+    manualSorting: props.manualSorting ?? false,
+    manualFiltering: props.manualFiltering ?? false,
+  }, () => null);
+  /*
+   * 实例引用只在提交后公开，由 React 自动处理引用变更与卸载清理。
+   * 页面通过原生 setter 控制表格，原有 ref 仍专门负责聚焦和滚动。
+   */
+  useImperativeHandle(tableRef, () => table, [table]);
+  return <NativeTable props={{ ...props, table, paginationEnabled, selectionEnabled } as unknown as RuntimeProps} imperativeRef={imperativeRef} />;
+}
+
+/*
+ * 请求状态先转换为普通数据 props，所有实例和界面行为沿用同一组件。
+ * 独立边界确保卸载或切回本地数据时清理在途请求。
+ */
+function RequestTable({ props, imperativeRef }: { props: ApexTableReactRequestProps<RowData>; imperativeRef: ForwardedRef<ApexTableRef> }) {
+  const dataProps = useRequestProps(props);
+  return <ManagedTable props={dataProps} imperativeRef={imperativeRef} />;
+}
+
+/*
+ * 实例、本地数据和请求通过独立子组件隔离，切换方式时不改变 Hook 调用顺序。
+ * 请求模式负责异步状态，兼容入口继续使用调用方的实例。
+ */
+function ApexTableReactImpl(props: RuntimeProps | ApexTableReactDataProps<RowData>, ref: ForwardedRef<ApexTableRef>) {
+  if (props.table) return <NativeTable props={props} imperativeRef={ref} />;
+  const dataProps = props as ApexTableReactDataProps<RowData>;
+  return dataProps.request ? <RequestTable props={dataProps} imperativeRef={ref} /> : <ManagedTable props={dataProps as ApexTableReactLocalProps<RowData>} imperativeRef={ref} />;
+}
+const ForwardedApexTableReact = forwardRef(ApexTableReactImpl);
+ForwardedApexTableReact.displayName = 'ApexTableReact';
+
+/*
+ * 基础签名从数据或请求推断行类型，实例签名保留原生特性与所选状态的推断。
+ * 两种签名均转发同一组公开引用方法，并禁止混用数据来源。
+ */
+export const ApexTableReact = ForwardedApexTableReact as {
+  <D extends RowData>(props: ApexTableReactDataProps<D> & RefAttributes<ApexTableRef>): ReactElement;
+  <F extends TableFeatures, D extends RowData, S = TableState<F>>(props: ApexTableProps<F, D, S> & { columns?: never; data?: never; request?: never; tableRef?: never } & RefAttributes<ApexTableRef>): ReactElement;
+};

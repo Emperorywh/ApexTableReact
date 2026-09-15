@@ -1,7 +1,7 @@
 {
   "name": "apex-table-react",
   "version": "0.1.0-rc.0",
-  "description": "面向 TanStack Table v9 原生实例的 React 业务表格界面",
+  "description": "基于 TanStack Table v9 封装、通过 props 配置的 React 业务表格组件",
   "type": "module",
   "main": "./dist/index.js",
   "module": "dist/index.js",
@@ -10,6 +10,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./unstyled": {
+      "types": "./dist/unstyled.d.ts",
+      "import": "./dist/unstyled.js"
     },
     "./adapters/local-column-preferences": {
       "types": "./dist/adapters/local-column-preferences.d.ts",
@@ -65,7 +69,6 @@
   "devDependencies": {
     "@commitlint/cli": "^17.1.2",
     "@commitlint/config-conventional": "^17.1.0",
-    "@tanstack/store": "0.11.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@umijs/lint": "^4.0.0",

@@ -4,4 +4,9 @@
  */
 module.exports = {
   extends: require.resolve('@umijs/lint/dist/config/eslint'),
+  /*
+   * 文档配置会被提交检查选中，因此显式纳入 ESLint 检查。
+   * 覆盖点文件的默认忽略行为，使配置文件也能正常检查。
+   */
+  ignorePatterns: ['!.dumirc.ts'],
 };

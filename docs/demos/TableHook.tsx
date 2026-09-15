@@ -1,16 +1,19 @@
-import { createTableHook, tableFeatures } from '@tanstack/react-table';
-import { ApexTable } from '@';
-import '@/styles/structure.css';
-import '@/styles/theme.css';
+import { useState } from 'react';
+import { ApexTableReact } from 'apex-table-react';
+import type { ApexTableReactDataProps, RowSelectionState } from 'apex-table-react';
 
 /*
- * createTableHook 在模块作用域定义项目自己的表格 Hook。
- * 生成的原生实例直接传给 ApexTable，无需额外适配。
+ * 项目 Hook 只组合可复用的 props，实例创建和样式加载继续由组件负责。
+ * 属性使用本包导出的类型，React 状态更新器可直接传给同名回调。
  */
-const { useAppTable } = createTableHook({ features: tableFeatures({}) });
-const data = [{ name: '陶瓷杯', stock: 36 }, { name: '亚麻桌布', stock: 12 }];
+type Item = { id: string; name: string; stock: number };
+const data: Item[] = [{ id: 'cup', name: '陶瓷杯', stock: 36 }, { id: 'cloth', name: '亚麻桌布', stock: 12 }];
 const columns = [{ accessorKey: 'name', header: '物品名称' }, { accessorKey: 'stock', header: '库存' }];
+function useInventoryProps(): ApexTableReactDataProps<Item> {
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  return { columns, data, getRowId: (row) => row.id, showSelectionColumn: true, state: { rowSelection }, onRowSelectionChange: setRowSelection };
+}
 export default function TableHook() {
-  const table = useAppTable({ data, columns }, () => null);
-  return <ApexTable table={table} height={230} />;
+  const props = useInventoryProps();
+  return <ApexTableReact {...props} height={260} />;
 }

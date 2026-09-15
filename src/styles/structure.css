@@ -1,0 +1,280 @@
+/*
+ * 结构样式只负责几何、滚动、交互区域和语义布局。
+ * 所有外观均由可选主题或消费方定义，动态行高只读组件输出。
+ */
+.apex-table { position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+  isolation: isolate;
+  box-sizing: border-box;
+  }
+
+.apex-table *, .apex-table *::before, .apex-table *::after { box-sizing: border-box;
+  }
+
+.apex-table-viewport { flex: 1;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  position: relative;
+  overflow-anchor: none;
+  }
+
+.apex-table-grid { display: block;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  }
+
+.apex-table-header { display: block;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  height: 44px;
+  }
+
+.apex-table-header tr, .apex-table-row { display: flex;
+  width: 100%;
+  }
+
+.apex-table-header tr { height: 44px;
+  }
+
+.apex-table-body { display: block;
+  }
+
+.apex-table-row { height: var(--apex-geometry-row-height, 48px);
+  }
+
+.apex-table-cell, .apex-table-header-cell { display: flex;
+  align-items: center;
+  flex: none;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+  }
+
+.apex-table-header-cell { overflow: visible;
+  white-space: nowrap;
+  }
+
+.apex-table-cell[data-pinned], .apex-table-header-cell[data-pinned] { position: sticky;
+  z-index: 2;
+  }
+
+.apex-table-cell[data-align='end'], .apex-table-header-cell[data-align='end'] { justify-content: flex-end;
+  text-align: right;
+  }
+
+.apex-table-cell[data-align='center'], .apex-table-header-cell[data-align='center'], .apex-table-cell[data-apex-track='selection'], .apex-table-cell[data-apex-track='number'] { justify-content: center;
+  text-align: center;
+  }
+
+.apex-table-header-content, .apex-table-cell-content { min-width: 0;
+  width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  }
+
+.apex-table-cell-content { max-height: 100%;
+  }
+
+.apex-table-sort-button { display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+  text-align: inherit;
+  }
+
+.apex-table-sort-icon { flex: none;
+  }
+
+.apex-table-checkbox { margin: auto;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  }
+
+.apex-table-resize-handle { position: absolute;
+  width: 8px;
+  right: -4px;
+  top: 0;
+  height: 100%;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 5;
+  }
+
+.apex-table-resize-handle[data-resizing] { user-select: none;
+  }
+
+.apex-table-resize-handle::after { content: '';
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  left: 3px;
+  top: 0;
+  }
+
+.apex-table-spacer { display: block;
+  pointer-events: none;
+  }
+
+.apex-table-spacer td { display: block;
+  padding: 0;
+  border: 0;
+  }
+
+.apex-table-toolbar { display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  flex: none;
+  min-height: 48px;
+  gap: var(--apex-table-control-gap, 8px);
+  }
+
+.apex-table-selection-summary { display: flex;
+  align-items: center;
+  gap: var(--apex-table-control-gap, 8px);
+  }
+
+.apex-table-pagination { display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--apex-table-control-gap, 8px);
+  flex: none;
+  min-height: 56px;
+  }
+
+.apex-table-page-buttons { display: flex;
+  align-items: center;
+  margin-left: auto;
+  gap: 4px;
+  }
+
+.apex-table-page-item { display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  }
+
+.apex-table-jump { display: flex;
+  align-items: center;
+  gap: 6px;
+  }
+
+.apex-table-jump input { width: 48px;
+  }
+
+.apex-table-empty, .apex-table-error { position: sticky;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  gap: 16px;
+  }
+
+.apex-table-skeleton { position: sticky;
+  left: 0;
+  overflow: hidden;
+  }
+
+.apex-table-skeleton-row { display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 0 16px;
+  height: var(--apex-geometry-row-height, 48px);
+  }
+
+.apex-table-skeleton-row span { display: block;
+  height: 12px;
+  flex: 1;
+  }
+
+.apex-table-column-settings { position: absolute;
+  right: 8px;
+  top: 44px;
+  width: min(420px, calc(100% - 16px));
+  max-height: calc(100% - 56px);
+  display: flex;
+  flex-direction: column;
+  z-index: var(--apex-table-overlay-z-index, 20);
+  padding: 16px;
+  }
+
+.apex-table-column-list { overflow: auto;
+  min-height: 0;
+  }
+
+.apex-table-panel-title { display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  }
+
+.apex-table-column-option { display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 0;
+  }
+
+.apex-table-column-option label { display: flex;
+  align-items: center;
+  gap: 8px;
+  }
+
+.apex-table-column-actions { display: flex;
+  gap: 4px;
+  }
+
+.apex-table-column-actions input { width: 70px;
+  min-width: 0;
+  }
+
+.apex-table-column-actions select { min-width: 0;
+  flex: 1;
+  }
+
+.apex-table-panel-message { min-height: 24px;
+  }
+
+.apex-table-menu, .apex-table-tooltip { z-index: var(--apex-table-overlay-z-index, 20);
+  max-width: min(360px, calc(100vw - 16px));
+  }
+
+.apex-table-menu { display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  }
+
+.apex-table-menu button { text-align: left;
+  }
+
+.apex-table-tooltip { pointer-events: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  }
+
+.apex-table-tooltip-trigger { display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  }
+
+.apex-table .apex-table-visually-hidden { position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+  }

@@ -1,0 +1,28 @@
+/*
+ * 文档示例布局与业务单元格外观独立维护，不进入组件运行时产物。
+ * 图片和开关预留固定空间，状态变化不能撑开统一行高。
+ * 复选框的补充布局独立引入，保留其余示例已有的书写形式。
+ */
+@import './demo-controls.css';
+
+.apex-demo-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-bottom: 24px; color: #243651; }
+.apex-demo-heading span { color: #7d8fa8; font-size: 11px; letter-spacing: 2px; }
+.apex-demo-heading h2 { margin: 6px 0; font-size: 26px; letter-spacing: 1px; }
+.apex-demo-heading p { margin: 0; color: #7d8fa8; font-size: 13px; }
+.apex-demo-query { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-bottom: 16px; }
+.apex-demo-query label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: #6d7b90; }
+.apex-demo-query input, .apex-demo-query select, .apex-demo-query button, .apex-demo-heading select { min-height: 32px; border: 1px solid #dce5f0; border-radius: 5px; background: #fff; padding: 4px 10px; color: #344867; }
+.apex-demo-query button { cursor: pointer; }
+.apex-demo-query input:focus, .apex-demo-query select:focus { outline: 2px solid #126bfa; outline-offset: 1px; }
+.apex-demo-product-image { width: 36px; height: 36px; object-fit: cover; border-radius: 5px; background: #f3f6f9; }
+.apex-demo-status { display: inline-flex; border-radius: 4px; padding: 2px 8px; background: #fff0f0; color: #cb4556; font-size: 12px; }
+.apex-demo-status[data-active='true'] { color: #248954; background: #e3f8eb; }
+.apex-table .apex-demo-switch { display: inline-flex; align-items: center; justify-content: flex-start; width: 34px; height: 20px; min-height: 20px; padding: 2px; border: 0; border-radius: 12px; background: #c9d2df; color: #fff; }
+.apex-table .apex-demo-switch[aria-checked='true'] { background: var(--apex-table-accent-color); justify-content: flex-end; }
+.apex-demo-switch span { display: block; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #34486730; }
+.apex-demo-tags { display: inline-flex; gap: 4px; }
+.apex-demo-tags span { padding: 2px 6px; border-radius: 3px; color: #2675ce; background: #ecf5ff; font-size: 11px; }
+.apex-demo-actions { display: inline-flex; align-items: center; gap: 4px; }
+.apex-table .apex-demo-actions > button { padding: 3px; border: 0; color: var(--apex-table-accent-color); background: none; }
+.apex-demo-notice { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 12px; font-size: 12px; color: #7d8fa8; }
+.apex-demo-brand { --apex-table-accent-color: #ad4f22; --apex-table-header-bg: #f6eee4; --apex-table-border-color: #dac8b3; --apex-table-text-color: #513d2e; --apex-table-row-selected-bg: #f9edd8; --apex-table-row-hover-bg: #fff9f1; --apex-table-radius: 0; --apex-table-font-family: Georgia, 'SimSun', serif; }

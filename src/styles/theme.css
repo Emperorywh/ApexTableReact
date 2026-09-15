@@ -1,0 +1,178 @@
+/*
+ * 浅色主题保持业务列表的细边框、浅蓝表头和蓝色操作色。
+ * 变量均限定在组件根下，可让同一页面的不同表格采用不同品牌主题。
+ */
+.apex-table {
+  --apex-table-bg: #fff;
+  --apex-table-header-bg: #f3f8ff;
+  --apex-table-text-color: #243651;
+  --apex-table-muted-color: #7c8ba1;
+  --apex-table-accent-color: #126bfa;
+  --apex-table-row-hover-bg: #f6f9fd;
+  --apex-table-row-selected-bg: #eaf4ff;
+  --apex-table-disabled-color: #9aa7b9;
+  --apex-table-focus-color: #126bfa;
+  --apex-table-border-color: #e4ebf4;
+  --apex-table-radius: 7px;
+  --apex-table-pinned-shadow: 3px 0 7px -5px #536b91;
+  --apex-table-font-family: -apple-system, blinkmacsystemfont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --apex-table-font-size: 13px;
+  --apex-table-padding-inline: 12px;
+  --apex-table-control-gap: 8px;
+  --apex-table-icon-size: 14px;
+  --apex-table-overlay-z-index: 20;
+
+  color: var(--apex-table-text-color);
+  background: var(--apex-table-bg);
+  border: 1px solid var(--apex-table-border-color);
+  border-radius: var(--apex-table-radius);
+  font: var(--apex-table-font-size)/1.5 var(--apex-table-font-family);
+}
+
+.apex-table-header { background: var(--apex-table-header-bg);
+  }
+
+.apex-table-cell, .apex-table-header-cell { padding: 0 var(--apex-table-padding-inline);
+  border-right: 1px solid var(--apex-table-border-color);
+  border-bottom: 1px solid var(--apex-table-border-color);
+  }
+
+.apex-table-header-cell { font-weight: 600;
+  background: var(--apex-table-header-bg);
+  }
+
+.apex-table-row { background: var(--apex-table-bg);
+  }
+
+.apex-table-row:hover { background: var(--apex-table-row-hover-bg);
+  }
+
+.apex-table-row[data-selected] { background: var(--apex-table-row-selected-bg);
+  }
+
+.apex-table-cell[data-pinned] { background: inherit;
+  }
+
+.apex-table-cell[data-pinned='start'], .apex-table-header-cell[data-pinned='start'] { box-shadow: var(--apex-table-pinned-shadow);
+  }
+
+.apex-table-cell[data-pinned='end'], .apex-table-header-cell[data-pinned='end'] { box-shadow: -3px 0 7px -5px var(--apex-table-muted-color);
+  }
+
+.apex-table button, .apex-table input, .apex-table select { font: inherit;
+  color: inherit;
+  }
+
+.apex-table button, .apex-table select, .apex-table-jump input, .apex-table-column-actions input { min-height: 30px;
+  padding: 3px 9px;
+  background: var(--apex-table-bg);
+  border: 1px solid var(--apex-table-border-color);
+  border-radius: 5px;
+  }
+
+.apex-table button { cursor: pointer;
+  }
+
+.apex-table button:hover:not(:disabled) { color: var(--apex-table-accent-color);
+  border-color: var(--apex-table-accent-color);
+  }
+
+.apex-table button:disabled, .apex-table input:disabled, .apex-table select:disabled { color: var(--apex-table-disabled-color);
+  cursor: not-allowed;
+  }
+
+.apex-table a { color: var(--apex-table-accent-color);
+  text-decoration: none;
+  }
+
+.apex-table a:hover { text-decoration: underline;
+  }
+
+.apex-table :focus-visible { outline: 2px solid var(--apex-table-focus-color);
+  outline-offset: 2px;
+  }
+
+.apex-table .apex-table-sort-button { padding: 0;
+  min-height: 32px;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font-weight: inherit;
+  }
+
+.apex-table-sort-icon { font-size: var(--apex-table-icon-size);
+  color: var(--apex-table-muted-color);
+  margin-left: 6px;
+  }
+
+.apex-table [aria-sort='ascending'] .apex-table-sort-icon, .apex-table [aria-sort='descending'] .apex-table-sort-icon { color: var(--apex-table-accent-color);
+  }
+
+.apex-table-checkbox { accent-color: var(--apex-table-accent-color);
+  cursor: pointer;
+  }
+
+.apex-table-resize-handle:hover::after, .apex-table-resize-handle[data-resizing]::after { background: var(--apex-table-accent-color);
+  }
+
+.apex-table-toolbar, .apex-table-pagination { padding: 10px 12px;
+  }
+
+.apex-table-toolbar { border-bottom: 1px solid var(--apex-table-border-color);
+  }
+
+.apex-table-pagination { border-top: 1px solid var(--apex-table-border-color);
+  font-variant-numeric: tabular-nums;
+  }
+
+.apex-table-pagination button { min-width: 30px;
+  }
+
+.apex-table-pagination [aria-current='page'] { background: var(--apex-table-accent-color);
+  border-color: var(--apex-table-accent-color);
+  color: var(--apex-table-bg);
+  }
+
+.apex-table-total, .apex-table-empty, .apex-table-panel-message { color: var(--apex-table-muted-color);
+  }
+
+.apex-table-selection-summary { color: var(--apex-table-accent-color);
+  }
+
+.apex-table .apex-table-selection-summary button { min-height: 24px;
+  padding: 0 4px;
+  border: 0;
+  color: var(--apex-table-muted-color);
+  }
+
+.apex-table-column-settings, .apex-table-menu, .apex-table-tooltip { background: var(--apex-table-bg);
+  color: var(--apex-table-text-color);
+  border: 1px solid var(--apex-table-border-color);
+  border-radius: var(--apex-table-radius);
+  box-shadow: 0 10px 30px #25385624;
+  }
+
+.apex-table-menu { padding: 5px;
+  }
+
+.apex-table .apex-table-menu button { border: 0;
+  padding: 7px 12px;
+  }
+
+.apex-table-tooltip { padding: 8px 12px;
+  }
+
+.apex-table-column-option { border-bottom: 1px solid var(--apex-table-border-color);
+  }
+
+.apex-table-skeleton-row span { background: var(--apex-table-header-bg);
+  border-radius: 4px;
+  animation: apex-table-pulse 1.4s ease-in-out infinite alternate;
+  }
+
+.apex-table-error strong { font-weight: 500;
+  }
+@keyframes apex-table-pulse { to { opacity: 0.4;
+  } }
+@media (prefers-reduced-motion: reduce) { .apex-table-skeleton-row span { animation: none;
+  } }

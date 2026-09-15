@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { createColumnHelper, tableFeatures, useTable } from '@tanstack/react-table';
 import { ApexTable } from '@';
 import './demo.css';
@@ -5,7 +6,7 @@ import '@/styles/structure.css';
 import '@/styles/theme.css';
 
 /*
- * 品牌样式通过根节点类名覆盖公开颜色变量，不改变表格行高和几何。
+ * 加载开关控制骨架状态，加载期间表格暂时隐藏原有数据行。
  * 本示例独立声明数据、列和所需特性，源码引用统一使用 @。
  */
 const features = tableFeatures({  });
@@ -20,7 +21,11 @@ const columns = helper.columns([
   helper.accessor('name', { header: '物品名称' }),
   helper.accessor('stock', { header: '库存' }),
 ]);
-export default function Customization() {
+export default function Loading() {
+  const [loading, setLoading] = useState(true);
   const table = useTable({ features, data, columns }, () => null);
-  return <ApexTable table={table} height={260} className="apex-demo-brand" />;
+  return <div className="apex-demo">
+    <div className="apex-demo-query"><label><input type="checkbox" checked={loading} onChange={(event) => setLoading(event.currentTarget.checked)} />加载中</label></div>
+    <ApexTable table={table} height={260} loading={loading} />
+  </div>;
 }

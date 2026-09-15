@@ -1,6 +1,12 @@
 import { defineConfig } from 'dumi';
+import { resolve } from 'node:path';
 
 export default defineConfig({
+  /*
+   * 文档中的 @ 与 TypeScript 路径映射保持一致，统一指向源码目录。
+   * 同时支持组件、类型和样式导入，避免依赖示例文件的目录层级。
+   */
+  alias: { '@': resolve(__dirname, 'src') },
   /*
    * 文档沿用 dumi，示例引用正式源码并与运行时包分离。
    * 页面文案默认中文，组件名仍保留项目既有名称。

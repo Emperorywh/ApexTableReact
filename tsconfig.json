@@ -18,6 +18,12 @@
     "jsx": "react-jsx",
     "baseUrl": "./",
     "paths": {
+      /*
+       * @ 统一指向源码目录，支持入口导入与目录内文件导入。
+       * father 构建会读取此映射，文档构建同步使用相同别名。
+       */
+      "@": ["src"],
+      "@/*": ["src/*"],
       "@@/*": [".dumi/tmp/*"],
       "ApexTableReact": ["src"],
       "ApexTableReact/*": ["src/*", "*"]

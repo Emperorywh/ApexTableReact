@@ -1,11 +1,10 @@
 import { createColumnHelper, tableFeatures, useTable } from '@tanstack/react-table';
 import { ApexTable } from '@';
-import './demo.css';
 import '@/styles/structure.css';
 import '@/styles/theme.css';
 
 /*
- * 品牌样式通过根节点类名覆盖公开颜色变量，不改变表格行高和几何。
+ * 最小本地渲染只需要静态数据、两列和一个原生表格实例。
  * 本示例独立声明数据、列和所需特性，源码引用统一使用 @。
  */
 const features = tableFeatures({  });
@@ -20,7 +19,7 @@ const columns = helper.columns([
   helper.accessor('name', { header: '物品名称' }),
   helper.accessor('stock', { header: '库存' }),
 ]);
-export default function Customization() {
+export default function Basic() {
   const table = useTable({ features, data, columns }, () => null);
-  return <ApexTable table={table} height={260} className="apex-demo-brand" />;
+  return <ApexTable table={table} height={260} />;
 }

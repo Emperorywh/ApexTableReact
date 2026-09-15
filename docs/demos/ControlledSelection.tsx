@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { createColumnHelper, tableFeatures, useTable, rowSelectionFeature } from '@tanstack/react-table';
 import { ApexTable } from '@';
-import { createAtom } from '@tanstack/store';
 import type { RowSelectionState } from '@tanstack/react-table';
-import './demo.css';
 import '@/styles/structure.css';
 import '@/styles/theme.css';
 
 /*
- * 选择状态保存在外部 atom，页面按钮与表格复选框共同更新该原生状态。
+ * React state 是选择状态的所有者，原生 updater 直接交给状态 setter。
  * 本示例独立声明数据、列和所需特性，源码引用统一使用 @。
  */
 const features = tableFeatures({ rowSelectionFeature });
@@ -23,14 +21,14 @@ const columns = helper.columns([
   helper.accessor('name', { header: '物品名称' }),
   helper.accessor('stock', { header: '库存' }),
 ]);
-export default function NativeCompatibility() {
-  const [rowSelection] = useState(() => createAtom<RowSelectionState>({ cup: true }));
-  const table = useTable({ features, data, columns, getRowId: (row) => row.id, atoms: { rowSelection } }, () => null);
-  return <div className="apex-demo">
-    <div className="apex-demo-query">
-      <button type="button" onClick={() => rowSelection.set({ cloth: true })}>通过 atom 选择桌布</button>
-      <button type="button" onClick={() => rowSelection.set({})}>通过 atom 清空</button>
-    </div>
+export default function ControlledSelection() {
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({ cup: true });
+  const table = useTable({
+    features, data, columns, getRowId: (row) => row.id,
+    state: { rowSelection }, onRowSelectionChange: setRowSelection,
+  }, () => null);
+  return <div>
     <ApexTable table={table} height={290} showSelectionColumn />
+    <p role="status">已选 ID：{Object.keys(rowSelection).filter((id) => rowSelection[id]).join('、') || '无'}</p>
   </div>;
 }

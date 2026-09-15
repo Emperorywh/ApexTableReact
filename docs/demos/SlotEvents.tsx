@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { createColumnHelper, tableFeatures, useTable, rowSelectionFeature } from '@tanstack/react-table';
 import { ApexTable } from '@';
-import { createAtom } from '@tanstack/store';
-import type { RowSelectionState } from '@tanstack/react-table';
 import './demo.css';
 import '@/styles/structure.css';
 import '@/styles/theme.css';
 
 /*
- * 选择状态保存在外部 atom，页面按钮与表格复选框共同更新该原生状态。
+ * slotProps 在原有控件上补充业务事件，preventDefault 可以取消本次选择。
  * 本示例独立声明数据、列和所需特性，源码引用统一使用 @。
  */
 const features = tableFeatures({ rowSelectionFeature });
@@ -23,14 +21,13 @@ const columns = helper.columns([
   helper.accessor('name', { header: '物品名称' }),
   helper.accessor('stock', { header: '库存' }),
 ]);
-export default function NativeCompatibility() {
-  const [rowSelection] = useState(() => createAtom<RowSelectionState>({ cup: true }));
-  const table = useTable({ features, data, columns, getRowId: (row) => row.id, atoms: { rowSelection } }, () => null);
+export default function SlotEvents() {
+  const [locked, setLocked] = useState(false);
+  const table = useTable({ features, data, columns, getRowId: (row) => row.id }, () => null);
   return <div className="apex-demo">
-    <div className="apex-demo-query">
-      <button type="button" onClick={() => rowSelection.set({ cloth: true })}>通过 atom 选择桌布</button>
-      <button type="button" onClick={() => rowSelection.set({})}>通过 atom 清空</button>
-    </div>
-    <ApexTable table={table} height={290} showSelectionColumn />
+    <div className="apex-demo-query"><label><input type="checkbox" checked={locked} onChange={(event) => setLocked(event.currentTarget.checked)} />禁止修改选择</label></div>
+    <ApexTable table={table} height={290} showSelectionColumn slotProps={{
+      checkbox: { controlProps: { onChange: (event) => { if (locked) event.preventDefault(); } } },
+    }} />
   </div>;
 }

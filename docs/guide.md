@@ -9,6 +9,18 @@ nav:
 
 当前候选尚未公开发布，使用仓库 `pnpm pack` 生成的 tarball。业务从 `@tanstack/react-table` 导入原生 API，Apex 接收原生实例。最小接入见 README，完整示例见 [组件演示](/components/apex-table)。
 
+## 按顺序学习
+
+组件演示从三条本地数据、两列和一个 `useTable` 实例开始。每个示例独立声明所需特性，可直接阅读对应源码。
+
+1. 基础渲染：本地数据、单元格格式、行操作。
+2. 本地交互：选择、排序、搜索、分页、列设置、密度。
+3. 展示状态：加载、空数据、错误重试。
+4. 外观扩展：文案、主题、工具栏插槽、复选框插槽、事件补充。
+5. 进阶接入：受控选择、外部 atom、自定义表格 Hook、虚拟滚动、服务端分页、列偏好。
+
+仓库内示例使用 `@` 引用 `src`。安装组件包的业务项目改用 `apex-table-react` 及其公开子入口。
+
 ## 本地与服务器
 
 本地连续列表显式注册 columnFilteringFeature、globalFilteringFeature、rowSortingFeature，以及 `filteredRowModel: createFilteredRowModel()`、`sortedRowModel: createSortedRowModel()`。不注册分页模型即可连续浏览。
@@ -27,7 +39,7 @@ nav:
 
 跨页选择用稳定 getRowId。分页表头调用原生页内全选，连续列表调用全部筛选结果全选。摘要清空调用 resetRowSelection(true)，恢复初始值使用 resetRowSelection()。
 
-商品示例翻页/排序保留选择，搜索/筛选清空，身份按 key 重建；核心不强加这些业务策略。普通内容触发行点击，复选框负责选择，按钮/链接等不连带点击；自定义交互区可添加 data-apex-interactive。
+服务端分页示例只演示分页状态、模拟请求和总数提交。跨页保留选择、筛选后清空选择等策略由业务决定。行操作示例单独演示行点击和菜单按钮；自定义交互区可添加 data-apex-interactive。
 
 查询变化即传 loading，隐藏旧行和旧总数。业务递增请求序号同时丢弃旧成功/失败，完成时一起提交 data、rowCount、error、loading。开关等待保存成功才更新值。
 

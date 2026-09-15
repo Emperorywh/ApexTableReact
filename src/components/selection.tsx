@@ -1,33 +1,38 @@
-import { useMemo, useRef } from 'react';
+import { Checkbox } from 'antd';
 import type { RowSelectionState } from '@tanstack/react-table';
 import type { ApexCheckboxDOM, ApexRootDOM } from '../types';
-import { composeRefs, mergeDOM } from '../internal/dom';
+import { mergeDOM } from '../internal/dom';
 import { useUI } from '../internal/context';
 import type { RuntimeRow, RuntimeTable } from '../internal/runtime';
 
 /*
- * 半选状态是 DOM 属性，必须同步到真实 input。
+ * 行选择和表头全选统一使用 antd Checkbox，由控件同步半选状态。
  * 行选择仅订阅该行 ID，业务单元格不依赖整份选择集合。
  */
-function Checkbox({ table, row, scope, checked, indeterminate, disabled, onChange }: {
+function SelectionCheckbox({ table, row, scope, checked, indeterminate, disabled, onChange }: {
   table: RuntimeTable; row?: RuntimeRow; scope: 'row' | 'page' | 'results'; checked: boolean; indeterminate: boolean; disabled: boolean; onChange(): void;
 }) {
   const { locale, slots, slotProps } = useUI();
-  const input = useRef<HTMLInputElement>(null);
-  const ref = useMemo(() => composeRefs<HTMLInputElement>(input, (node) => { if (node) node.indeterminate = indeterminate; }), [indeterminate]);
+  /*
+   * antd 变更事件通过 nativeEvent 记录取消状态，保留业务阻止选择的能力。
+   * 跳过外部复选框组，确保选中状态始终由当前表格管理。
+   */
   const controlProps = mergeDOM<ApexCheckboxDOM>({
-    ref, type: 'checkbox', className: 'apex-table-checkbox', checked, indeterminate, disabled,
+    type: 'checkbox', checked, indeterminate, disabled, skipGroup: true,
     'aria-label': row ? locale.selectRow(row.id) : scope === 'page' ? locale.selectPage : locale.selectResults,
-    'aria-checked': indeterminate ? 'mixed' : checked, onChange,
+    'aria-checked': indeterminate ? 'mixed' : checked, onChange: (event) => { if (!event.nativeEvent.defaultPrevented) onChange(); },
   }, slotProps.checkbox?.controlProps);
   if (slots.checkbox) return <slots.checkbox {...{ table, row, scope, controlProps, locale }} />;
-  const { indeterminate: mixed, ...inputProps } = controlProps;
-  return <input {...inputProps} data-indeterminate={mixed || undefined} />;
+  /*
+   * 外层标记覆盖 antd 的标签与勾选图标，点击任意位置都不会触发行点击。
+   * 居中布局独立于控件外观，尺寸、禁用态与焦点样式由 antd 管理。
+   */
+  return <span className="apex-table-checkbox" data-apex-interactive><Checkbox {...controlProps} skipGroup /></span>;
 }
 export function RowCheckbox({ table, row }: { table: RuntimeTable; row: RuntimeRow }) {
   if (!table.atoms.rowSelection) return null;
   return <table.Subscribe source={table.atoms.rowSelection} selector={(state) => !!state[row.id]}>
-    {(checked) => <Checkbox table={table} row={row} scope="row" checked={checked} indeterminate={false} disabled={!row.getCanSelect?.()} onChange={() => row.toggleSelected?.()} />}
+    {(checked) => <SelectionCheckbox table={table} row={row} scope="row" checked={checked} indeterminate={false} disabled={!row.getCanSelect?.()} onChange={() => row.toggleSelected?.()} />}
   </table.Subscribe>;
 }
 export function HeaderCheckbox({ table, unavailable }: { table: RuntimeTable; unavailable: boolean }) {
@@ -41,7 +46,7 @@ export function HeaderCheckbox({ table, unavailable }: { table: RuntimeTable; un
     {() => {
       const paged = paginationEnabled ?? (typeof table.getPageCount === 'function' && !!table.atoms.pagination);
       const rows = paged ? table.getRowModel().rows : (table.getFilteredRowModel?.() ?? table.getRowModel()).rows;
-      return <Checkbox table={table} scope={paged ? 'page' : 'results'} checked={paged ? table.getIsAllPageRowsSelected() : table.getIsAllRowsSelected()} indeterminate={paged ? table.getIsSomePageRowsSelected() : table.getIsSomeRowsSelected()} disabled={unavailable || !rows.some((row) => row.getCanSelect?.())} onChange={() => paged ? table.toggleAllPageRowsSelected() : table.toggleAllRowsSelected()} />;
+      return <SelectionCheckbox table={table} scope={paged ? 'page' : 'results'} checked={paged ? table.getIsAllPageRowsSelected() : table.getIsAllRowsSelected()} indeterminate={paged ? table.getIsSomePageRowsSelected() : table.getIsSomeRowsSelected()} disabled={unavailable || !rows.some((row) => row.getCanSelect?.())} onChange={() => paged ? table.toggleAllPageRowsSelected() : table.toggleAllRowsSelected()} />;
     }}
   </table.Subscribe>;
 }

@@ -20,22 +20,23 @@ nav:
 | toolbar | 容器 rootProps |
 | headerContent/sortIcon | 内容 rootProps、真实按钮 sortButtonProps、装饰图标 |
 | cellContent | 内容容器 rootProps |
-| checkbox | 真实 input 的 controlProps；indeterminate 同步 DOM |
+| checkbox | antd Checkbox 的 controlProps；直接转发属性、半选状态和 CheckboxRef |
 | resizeHandle | 手柄 handleProps、数值输入 widthInputProps |
 | pagination | rootProps/getPageButtonProps(index)/pageSizeProps/jumpInputProps |
 | columnSettings | 模态弹窗内容 rootProps；转发 ref 并保留 children 可复用拖动、编辑、权限和草稿提交 |
-| menu | triggerProps/contentProps/getItemProps(id) |
 | tooltip | triggerProps/contentProps；提示不作为焦点目标 |
 | loading/empty/error | rootProps、可选 retryButtonProps |
 | selectionSummary | rootProps、原生选择和 count；清空用 reset(true) |
 
 slotProps.checkbox.controlProps 等可补充 className、非几何 style、ref 和事件。业务事件先执行，同步 preventDefault 取消此次内部 setter，stopPropagation 仅影响传播。Escape/指针释放/卸载清理始终执行。
 
-slots 接收 React 组件，支持组件内部 Hook、memo 和 forwardRef。建议在组件外定义稳定的插槽组件，避免每次父级渲染创建新组件类型导致控件卸载。复选框示例使用 memo 与布局副作用同步半选状态。
+行选择和表头全选默认使用 antd `Checkbox`，主题沿用当前表格的 `editorConfig`。复选框的 `controlProps.onChange` 接收 antd 变更事件，通过 `event.target.checked` 读取状态；`ref` 指向 antd `CheckboxRef`，真实输入框可通过 `ref.current.input` 访问。自定义复选框插槽应转发 `controlProps`，并将包装节点标记为 `data-apex-interactive`，避免触发行点击。
+
+slots 接收 React 组件，支持组件内部 Hook、memo 和 forwardRef。建议在组件外定义稳定的插槽组件，避免每次父级渲染创建新组件类型导致控件卸载。复选框示例使用 memo，并由 antd Checkbox 同步半选状态。
 
 插槽上下文容器属性为只读；其中的 table、row、column、cell 和 header 仍是原生对象，可以正常调用它们的方法。工具栏、复选框和事件补充分为三个示例；受控选择与实例 API 也分别演示。
 
-类型与运行时保护身份、状态、role、tabIndex、必需 aria 和几何。aria-describedby 去重合并。引用指向同一真实元素，支持 React 18 的 null 和 React 19 的清理返回值。
+类型与运行时保护身份、状态、role、tabIndex、必需 aria 和几何。aria-describedby 去重合并。DOM 引用指向同一真实元素，支持 React 18 的 null 和 React 19 的清理返回值；复选框引用使用 antd CheckboxRef。
 
 getPopupContainer 应选择主题作用域内的容器，或由业务给外部浮层容器提供对应样式和变量。
 

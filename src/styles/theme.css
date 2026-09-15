@@ -63,12 +63,12 @@
  * 单元格承担编辑器的边界，控件背景透明以透出行悬停和选中底色。
  * 内边距移到控件内部，使输入区域覆盖整格，保留现有文字起始位置。
  * 只调整单元格内的触发器，不改变 antd 弹层、勾选标记和开关样式。
- * 同时移除输入包裹层的聚焦轮廓，避免图片地址等复合控件出现双框。
+ * 同时移除输入包裹层的聚焦轮廓，避免带前后缀的输入控件出现双框。
  */
 .apex-table-cell:has(.apex-table-editor) { padding: 0;
   }
 
-.apex-table .apex-table-editor:is([data-apex-editor='Input'], [data-apex-editor='InputNumber'], [data-apex-editor='Select'], [data-apex-editor='DatePicker'], [data-apex-editor='TimePicker'], [data-apex-editor='ColorPicker']) > *, .apex-table .apex-table-editor[data-apex-editor='Image'] > :last-child:not(:first-child) { padding-inline: var(--apex-table-padding-inline);
+.apex-table .apex-table-editor:is([data-apex-editor='Input'], [data-apex-editor='InputNumber'], [data-apex-editor='Select'], [data-apex-editor='DatePicker'], [data-apex-editor='TimePicker'], [data-apex-editor='ColorPicker']) > * { padding-inline: var(--apex-table-padding-inline);
   background: transparent;
   border: 0;
   border-radius: 0;
@@ -86,9 +86,6 @@
   }
 
 .apex-table-editor:is([data-apex-editor='Checkbox'], [data-apex-editor='Switch'], [data-apex-editor='Radio'], [data-apex-editor='Image']) { padding-inline: var(--apex-table-padding-inline);
-  }
-
-.apex-table .apex-table-editor[data-apex-editor='Image'] > :last-child:not(:first-child) { padding-inline: 0;
   }
 
 .apex-table .apex-table-editor[data-apex-editor='ColorPicker'] > * { justify-content: inherit;
@@ -171,10 +168,6 @@
 .apex-table [aria-sort='ascending'] .apex-table-sort-icon, .apex-table [aria-sort='descending'] .apex-table-sort-icon { color: var(--apex-table-accent-color);
   }
 
-.apex-table-checkbox { accent-color: var(--apex-table-accent-color);
-  cursor: pointer;
-  }
-
 .apex-table-resize-handle:hover::after, .apex-table-resize-handle[data-resizing]::after { background: var(--apex-table-accent-color);
   }
 
@@ -208,21 +201,16 @@
   color: var(--apex-table-muted-color);
   }
 
-.apex-table-menu, .apex-table-tooltip { background: var(--apex-table-bg);
+/*
+ * 表格主题只装饰内置提示浮层。
+ * 业务菜单的外观交由 antd Dropdown 主题管理。
+ */
+.apex-table-tooltip { background: var(--apex-table-bg);
   color: var(--apex-table-text-color);
   border: 1px solid var(--apex-table-border-color);
   border-radius: var(--apex-table-radius);
   box-shadow: 0 10px 30px #25385624;
-  }
-
-.apex-table-menu { padding: 5px;
-  }
-
-.apex-table .apex-table-menu button { border: 0;
-  padding: 7px 12px;
-  }
-
-.apex-table-tooltip { padding: 8px 12px;
+  padding: 8px 12px;
   }
 
 /*

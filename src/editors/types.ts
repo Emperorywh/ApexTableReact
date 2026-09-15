@@ -17,7 +17,11 @@ export interface ApexEditorPropsMap {
   Select: Omit<EditorProps<SelectProps<ApexSelectValue>>, 'labelInValue'>;
   Switch: EditorProps<SwitchProps>;
   TimePicker: EditorProps<TimePickerProps>;
-  Image: Omit<ImageProps, 'src'> & { inputProps?: EditorProps<InputProps> };
+  /*
+   * 图片只开放 antd 的展示与预览属性，地址由当前行数据绑定。
+   * 不再提供地址输入属性，避免配置未展示的编辑控件。
+   */
+  Image: Omit<ImageProps, 'src'>;
 }
 export type ApexEditorType = keyof ApexEditorPropsMap;
 export interface ApexCellContext<D> {

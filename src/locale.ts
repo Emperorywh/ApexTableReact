@@ -3,13 +3,9 @@ import type { ApexLocale } from './types';
 /*
  * 内置可见文案和可访问名称集中管理。
  * 数量格式化同样开放，避免其他语言仍混入中文单位。
+ * 业务下拉菜单的触发文案由消费方提供，不纳入表格内置文案。
  */
 export const zhCN: ApexLocale = {
-  /*
-   * 内置图片编辑器提供地址输入，默认文案可由 locale 覆盖。
-   * antd 弹层的日期与按钮文案由 editorConfig 独立配置。
-   */
-  imageAddress: '图片地址',
   tableName: '数据表格', loading: '正在加载…', empty: '暂无数据', noMatches: '没有匹配的结果', noColumns: '没有可见列，请在列设置中选择要显示的列',
   error: '加载失败', retry: '重试', columnSettings: '列设置', close: '关闭', resetLayout: '恢复默认', clearSelection: '清空选择',
   /*
@@ -26,7 +22,7 @@ export const zhCN: ApexLocale = {
   invalidGeometry: '尺寸配置无效：行高至少 32px，轨道和列宽必须为有限正数', invalidPagination: '分页参数无效：pageIndex 必须为非负整数，pageSize 必须为正整数', duplicateRowId: '存在空行 ID 或重复行 ID，请配置唯一稳定的 getRowId',
   duplicateColumnId: '存在空列 ID 或重复列 ID，请检查列定义', unmeasurable: '表体需要明确高度或可测量的 flex 容器',
   virtualizationDisabled: '大数据已关闭虚拟化，完整挂载可能影响性能', protectedProp: '插槽不能覆盖受保护的语义、状态或几何属性',
-  compact: '紧凑', standard: '标准', comfortable: '宽松', density: '行密度', menu: '更多操作',
+  compact: '紧凑', standard: '标准', comfortable: '宽松', density: '行密度',
   selectRow: (id) => `选择行 ${id}`, sortColumn: (label) => `排序：${label}`, resizeColumn: (label) => `调整列宽：${label}`,
   page: (index) => `第 ${index + 1} 页`, total: (count) => `共 ${count.toLocaleString('zh-CN')} 条`,
   selected: (count) => `已选择 ${count.toLocaleString('zh-CN')} 条`, perPage: (count) => `${count} 条/页`,

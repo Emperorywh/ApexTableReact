@@ -49,7 +49,7 @@ function ColorEditor({ value, onChange, ...props }: Omit<ColorPickerProps, 'valu
  */
 export function BuiltinCell({ cell, editor }: { cell: Cell<TableFeatures, RowData>; editor: ApexCellEditor<RowData> }) {
   const editing = useContext(EditingContext);
-  const { closeSignal, locale } = useUI();
+  const { closeSignal } = useUI();
   const [open, setOpen] = useState(false);
   useEffect(() => { setOpen(false); }, [closeSignal]);
   const context = cellContext(cell);
@@ -108,12 +108,20 @@ export function BuiltinCell({ cell, editor }: { cell: Cell<TableFeatures, RowDat
     case 'ColorPicker': {
       const props = resolveProps(editor.props, context);
       keyboardEnabled = enabled && !props?.disabled;
-      control = <ColorEditor aria-label={label} allowClear showText {...props} {...popup} open={popup.open && keyboardEnabled} value={typeof value === 'string' ? value : null} disabled={!keyboardEnabled} onChange={change} />;
+      /*
+       * 单元格默认只显示色块，避免颜色编码占用表格空间。
+       * 颜色面板继续使用 antd 的选择与输入能力，业务值仍按原格式回写。
+       */
+      control = <ColorEditor aria-label={label} allowClear showText={false} {...props} {...popup} open={popup.open && keyboardEnabled} value={typeof value === 'string' ? value : null} disabled={!keyboardEnabled} onChange={change} />;
       break;
     }
     case 'Image': {
-      const { inputProps, ...props } = resolveProps(editor.props, context) ?? {};
-      control = <><Image width={28} height={28} alt={label} {...props} src={editorText(value) || undefined} />{enabled && <Input aria-label={`${label} · ${locale.imageAddress}`} variant="borderless" placeholder={locale.imageAddress} allowClear {...inputProps} value={editorText(value)} onChange={(event) => change(event.target.value)} />}</>;
+      const props = resolveProps(editor.props, context);
+      /*
+       * 图片单元格只呈现缩略图并保留点击预览，不展示地址输入框。
+       * 图片地址仍从行数据读取，外部更新数据后自动同步展示。
+       */
+      control = <Image width={28} height={28} alt={label} {...props} src={editorText(value) || undefined} />;
       break;
     }
   }

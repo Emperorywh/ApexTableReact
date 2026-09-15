@@ -132,10 +132,6 @@
 .apex-table-editor[data-apex-editor='Image'] > :first-child { flex: none;
   }
 
-.apex-table-editor[data-apex-editor='Image'] > input, .apex-table-editor[data-apex-editor='Image'] > :last-child:not(:first-child) { flex: 1;
-  height: 100%;
-  }
-
 .apex-table-sort-button { display: flex;
   align-items: center;
   justify-content: space-between;
@@ -163,9 +159,14 @@
 .apex-table-settings-trigger svg { flex: none;
   }
 
-.apex-table-checkbox { margin: auto;
-  width: 16px;
-  height: 16px;
+/*
+ * 选择列只负责居中 antd 复选框，不锁定控件尺寸。
+ * 图标大小和内部布局随 antd 主题配置变化。
+ */
+.apex-table-checkbox { display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: auto;
   flex: none;
   }
 
@@ -417,19 +418,13 @@
   }
   }
 
-.apex-table-menu, .apex-table-tooltip { z-index: var(--apex-table-overlay-z-index, 20);
+/*
+ * 内置浮层结构仅用于提示组件。
+ * 业务菜单使用 antd Dropdown 自身的布局和层级。
+ */
+.apex-table-tooltip { z-index: var(--apex-table-overlay-z-index, 20);
   max-width: min(360px, calc(100vw - 16px));
-  }
-
-.apex-table-menu { display: flex;
-  flex-direction: column;
-  min-width: 160px;
-  }
-
-.apex-table-menu button { text-align: left;
-  }
-
-.apex-table-tooltip { pointer-events: none;
+  pointer-events: none;
   white-space: normal;
   overflow-wrap: anywhere;
   }

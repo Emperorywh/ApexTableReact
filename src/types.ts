@@ -1,12 +1,17 @@
 import type { Cell, CellData, Column, ColumnDef, Header, PaginationState, ReactTable, Row, RowData, RowSelectionState, TableFeatures, TableOptions, TableState } from '@tanstack/react-table';
 import type { managedFeatures } from './internal/features';
 /*
+ * 选择插槽直接使用 antd 复选框的公开属性与引用类型。
+ * 业务可完整转发控制属性，半选状态由 Checkbox 自行同步。
+ */
+import type { Checkbox } from 'antd';
+/*
  * 编辑器类型独立声明，统一从包入口导出，业务无需访问内部实现。
  * 列元数据沿用原生行泛型，编辑权限和属性工厂能够推断业务记录。
  */
 import type { ApexCellChange, ApexCellEditor, ApexEditorConfig } from './editors/types';
 export type { ApexCellChange, ApexCellContext, ApexCellEditor, ApexEditorConfig, ApexEditorPropsMap, ApexEditorType, ApexSelectValue } from './editors/types';
-import type { ButtonHTMLAttributes, ComponentPropsWithRef, ComponentType, CSSProperties, HTMLAttributes, InputHTMLAttributes, MouseEvent, ReactNode, Ref, SelectHTMLAttributes } from 'react';
+import type { AriaAttributes, ButtonHTMLAttributes, ComponentPropsWithRef, ComponentType, CSSProperties, HTMLAttributes, InputHTMLAttributes, MouseEvent, ReactNode, Ref, SelectHTMLAttributes } from 'react';
 
 /*
  * 元数据提供界面和内置编辑器配置；业务可通过原生 columnMeta 槽交叉合并。
@@ -99,12 +104,6 @@ export interface ApexLocale {
   standard: string;
   comfortable: string;
   density: string;
-  menu: string;
-  /*
-   * 图片单元格的地址输入与可访问名称共用翻译入口。
-   * 上传流程由业务接入，内置编辑器只修改图片地址。
-   */
-  imageAddress: string;
   selectRow(id: string): string;
   sortColumn(label: string): string;
   resizeColumn(label: string): string;
@@ -117,6 +116,7 @@ export interface ApexLocale {
 /*
  * 插槽补充属性在类型层排除状态、语义、身份和几何。
  * 完整 props 包仍包含必要属性，替换控件必须转发到对应真实元素。
+ * 业务菜单使用 antd Dropdown 自身的属性，不再提供内置菜单插槽。
  */
 type Geometry = 'position' | 'display' | 'width' | 'minWidth' | 'maxWidth' | 'height' | 'minHeight' | 'maxHeight' | 'top' | 'bottom' | 'left' | 'right' | 'inset' | 'transform' | 'overflow' | 'overflowX' | 'overflowY' | 'flex' | 'flexBasis' | 'gridTemplateColumns' | 'boxSizing' | 'zIndex';
 type Protected = 'id' | 'role' | 'tabIndex' | 'children' | 'style' | 'dangerouslySetInnerHTML' | 'checked' | 'defaultChecked' | 'disabled' | 'type' | 'value' | 'defaultValue' | 'min' | 'max' | 'step' | 'aria-label' | 'aria-labelledby' | 'aria-checked' | 'aria-sort' | 'aria-rowindex' | 'aria-colindex' | 'aria-rowcount' | 'aria-colcount' | 'aria-busy' | 'aria-expanded' | 'aria-controls' | 'aria-haspopup' | 'aria-hidden' | 'aria-current' | 'aria-orientation' | 'aria-valuenow' | 'aria-valuemin' | 'aria-valuemax' | 'aria-live' | 'aria-modal';
@@ -125,31 +125,21 @@ export type ApexRootDOM = HTMLAttributes<HTMLDivElement> & { ref?: Ref<HTMLDivEl
 export type ApexButtonDOM = ButtonHTMLAttributes<HTMLButtonElement> & { ref?: Ref<HTMLButtonElement> };
 export type ApexInputDOM = InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> };
 export type ApexSelectDOM = SelectHTMLAttributes<HTMLSelectElement> & { ref?: Ref<HTMLSelectElement> };
-export type ApexCheckboxDOM = ApexInputDOM & { indeterminate: boolean };
+export type ApexCheckboxDOM = ComponentPropsWithRef<typeof Checkbox> & AriaAttributes & { indeterminate: boolean };
 export interface ApexSlotProps {
   toolbar?: { rootProps?: ApexDOMExtension<ApexRootDOM> };
   headerContent?: { rootProps?: ApexDOMExtension<ApexRootDOM>; sortButtonProps?: ApexDOMExtension<ApexButtonDOM> };
   sortIcon?: { rootProps?: ApexDOMExtension<ComponentPropsWithRef<'span'>> };
   cellContent?: { rootProps?: ApexDOMExtension<ApexRootDOM> };
-  checkbox?: { controlProps?: ApexDOMExtension<ApexInputDOM> };
+  checkbox?: { controlProps?: Omit<ApexDOMExtension<ApexCheckboxDOM>, 'indeterminate' | 'skipGroup'> };
   resizeHandle?: { handleProps?: ApexDOMExtension<ApexRootDOM>; widthInputProps?: ApexDOMExtension<ApexInputDOM> };
   pagination?: { rootProps?: ApexDOMExtension<ComponentPropsWithRef<'nav'>>; pageButtonProps?: ApexDOMExtension<ApexButtonDOM>; pageSizeProps?: ApexDOMExtension<ApexSelectDOM>; jumpInputProps?: ApexDOMExtension<ApexInputDOM> };
   columnSettings?: { rootProps?: ApexDOMExtension<ApexRootDOM> };
-  menu?: { triggerProps?: ApexDOMExtension<ApexButtonDOM>; contentProps?: ApexDOMExtension<ApexRootDOM>; itemProps?: ApexDOMExtension<ApexButtonDOM> };
   tooltip?: { triggerProps?: ApexDOMExtension<ComponentPropsWithRef<'span'>>; contentProps?: ApexDOMExtension<ApexRootDOM> };
   loading?: { rootProps?: ApexDOMExtension<ApexRootDOM> };
   empty?: { rootProps?: ApexDOMExtension<ApexRootDOM> };
   error?: { rootProps?: ApexDOMExtension<ApexRootDOM>; retryButtonProps?: ApexDOMExtension<ApexButtonDOM> };
   selectionSummary?: { rootProps?: ApexDOMExtension<ApexRootDOM> };
-}
-export interface ApexMenuItem { id: string; label: ReactNode; disabled?: boolean; onSelect(): void }
-export interface ApexMenuSlot {
-  open: boolean;
-  items: readonly ApexMenuItem[];
-  triggerProps: ApexButtonDOM;
-  contentProps: ApexRootDOM;
-  getItemProps(id: string): ApexButtonDOM;
-  children: ReactNode;
 }
 export interface ApexTooltipSlot {
   open: boolean;
@@ -174,7 +164,6 @@ export interface ApexSlots<F extends TableFeatures, D extends RowData, S = Table
   resizeHandle: Slot<Native<F, D, S> & { column: Column<F, D>; resizing: boolean; handleProps: ApexRootDOM; widthInputProps: ApexInputDOM }>;
   pagination: Slot<Native<F, D, S> & { pagination: PaginationState; total: number | undefined; pageCount: number; unavailable: boolean; rootProps: ComponentPropsWithRef<'nav'>; getPageButtonProps(index: number): ApexButtonDOM; pageSizeProps: ApexSelectDOM; jumpInputProps: ApexInputDOM; children: ReactNode }>;
   columnSettings: Slot<Native<F, D, S> & { columns: Column<F, D>[]; onClose(): void; rootProps: ApexRootDOM; children: ReactNode }>;
-  menu: Slot<ApexMenuSlot>;
   tooltip: Slot<ApexTooltipSlot>;
   loading: Slot<{ locale: ApexLocale; rootProps: ApexRootDOM; children: ReactNode }>;
   empty: Slot<{ locale: ApexLocale; filtered: boolean; rootProps: ApexRootDOM; children: ReactNode }>;

@@ -159,6 +159,6 @@ group:
 
 ### 24. 内置单元格与受控编辑
 
-data 模式通过 `editable` 和 `onDataChange` 开启编辑，列的 `meta.apex.editor` 选择 antd 控件。示例包含十种组件，支持排序、分页、虚拟滚动、只读切换和获取全部数据。Image 支持缩略图预览与图片地址编辑，上传由业务接入。
+data 模式通过 `editable` 和 `onDataChange` 开启编辑，列的 `meta.apex.editor` 选择 antd 控件。示例包含十种组件，支持排序、分页、虚拟滚动、只读切换和获取全部数据。Image 只展示缩略图并支持预览，图片更新由业务通过 data 接入；ColorPicker 默认只展示可点击选择颜色的色块。
 
 <code src="../../docs/demos/EditableCells.tsx"></code>

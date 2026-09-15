@@ -39,7 +39,7 @@ export default function Example() {
 
 ## 十种组件演示
 
-横向滚动可查看全部控件；切换只读、翻页、排序、虚拟滚动后，可点击“获取全部数据”检查最新记录。Image 提供图片预览和地址编辑，上传由业务接入。
+横向滚动可查看全部控件；切换只读、翻页、排序、虚拟滚动后，可点击“获取全部数据”检查最新记录。Image 只展示图片并支持预览，图片地址更新由业务通过 data 接入；ColorPicker 默认只展示色块，点击后可选择颜色。
 
 <code src="./demos/EditableCells.tsx"></code>
 
@@ -69,7 +69,7 @@ props 保留控件特有选项和类型推断，但 `value/defaultValue/checked/
 | Select | string / number，多选为数组；单选清空为 null |
 | DatePicker、TimePicker | 按 valueFormat 编码的 string，清空为 null；props.format 仅控制展示格式 |
 | ColorPicker | 十六进制颜色字符串，透明度保留为 alpha，清空为 null |
-| Image | 图片地址 string；props 配置 antd Image，props.inputProps 配置地址 Input |
+| Image | 读取图片地址 string 展示缩略图，不在单元格内编辑地址；props 配置 antd Image |
 
 每次控件有效的 onChange 立即触发 onDataChange。回调的第一个参数为新数组；第二个参数为 ApexCellChange，包含修改后的 row、修改前的 previousRow、rowId、原始 rowIndex、columnId、previousValue 和 value。未修改行保留原引用。
 

@@ -88,7 +88,9 @@ columnDef.meta.apex 支持 align(start/center/end)、flex、pinPriority、canReo
 
 flex 只作用于未固定且无用户 sizing 覆盖的列，分配剩余宽度，不修改原生 getSize/size。无 flex 时余量留白。窄容器保留 160px 中间区，释放低优先级 sticky，原生固定状态与顺序不变。
 
-ApexMenu：items 为只读 {id,label,disabled?,onSelect} 数组，支持方向键、Home/End、Escape、Tab 和外部关闭。ApexTooltip：content/children，悬停或聚焦展示且不夺取焦点。表格内控件继承当前表格插槽和浮层容器。
+行操作菜单直接使用 `import { Dropdown } from 'antd'`，通过 `menu.items` 配置菜单项、`menu.onClick` 处理操作，使用 `trigger={['click']}` 点击打开，参见行操作示例。菜单及浮层容器通过 Dropdown 自身的属性配置。
+
+ApexTooltip：content/children，悬停或聚焦展示且不夺取焦点。表格内提示继承当前表格插槽和浮层容器。
 
 headerContent/cellContent 接收原生 header/cell 与已经生成的 children，避免重复调用渲染器。普通列通过 table.FlexRender 渲染，配置 editor 的列生成内置单元格。原生 core table 上下文关系保持原样。
 

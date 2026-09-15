@@ -6,7 +6,7 @@ import { zhCN } from '../locale';
 
 /*
  * 上下文只承载界面扩展与有效焦点容器，不复制原生表格状态。
- * 业务单元格内的菜单和提示复用同一局部主题与浮层生命周期。
+ * 内置提示复用当前表格的浮层生命周期，业务菜单由 antd Dropdown 管理。
  */
 export interface UIContextValue {
   locale: ApexLocale;

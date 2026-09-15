@@ -1,0 +1,96 @@
+/*
+ * 站点名称按实际内容占宽，避免默认侧栏宽度挤压较长的品牌名称。
+ * 导航与工具区保持独立间距，窄屏继续使用 dumi 原有的移动菜单。
+ */
+.dumi-default-header {
+  .dumi-default-header-left {
+    width: auto;
+    flex: 0 0 auto;
+    margin-inline-end: 40px;
+  }
+
+  .dumi-default-logo {
+    white-space: nowrap;
+  }
+
+  .dumi-default-header-right {
+    min-width: 0;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .dumi-default-navbar {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .dumi-default-header-right-aside {
+    flex-shrink: 0;
+  }
+}
+
+/*
+ * 平板宽度优先压缩导航间距和搜索框，不压缩品牌名称。
+ * 断点与默认主题一致，防止移动菜单与桌面布局互相覆盖。
+ */
+@media (min-width: 768px) and (max-width: 1100px) {
+  .dumi-default-header {
+    .dumi-default-header-left {
+      margin-inline-end: 24px;
+    }
+
+    .dumi-default-navbar > li:not(:last-child) {
+      margin-inline-end: 20px;
+    }
+
+    .dumi-default-search-bar:not(:last-child) {
+      margin-inline-end: 12px;
+    }
+
+    .dumi-default-search-bar-input {
+      width: 180px;
+    }
+
+    .dumi-default-search-bar .dumi-default-search-shortcut {
+      display: none;
+    }
+  }
+}
+
+/*
+ * 紧凑平板仍保留可输入的搜索框，通过字号和间距腾出空间。
+ * 品牌、导航与主题入口在移动断点上方也不能互相挤压。
+ */
+@media (min-width: 768px) and (max-width: 900px) {
+  .dumi-default-header {
+    .dumi-default-logo {
+      font-size: 18px;
+
+      img {
+        height: 32px;
+      }
+    }
+
+    .dumi-default-header-right {
+      gap: 16px;
+    }
+
+    .dumi-default-navbar > li {
+      font-size: 16px;
+
+      &:not(:last-child) {
+        margin-inline-end: 12px;
+      }
+    }
+
+    .dumi-default-search-bar-input {
+      width: 140px;
+    }
+  }
+}
+
+@media (max-width: 767px) {
+  .dumi-default-header .dumi-default-header-left {
+    margin-inline-end: 40px;
+  }
+}

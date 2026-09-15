@@ -24,8 +24,8 @@
     }
   },
   /*
-   * 类型检查覆盖组件源码、构建配置与文档示例。
+   * 类型检查覆盖组件源码、构建配置、文档示例与本地主题插槽。
    * 性能测试目录已清理，示例数据由文档目录独立维护。
    */
-  "include": [".dumirc.ts", ".fatherrc.ts", "src/**/*", "docs/demos/**/*"]
+  "include": [".dumirc.ts", ".fatherrc.ts", ".dumi/theme/**/*", "src/**/*", "docs/demos/**/*"]
 }

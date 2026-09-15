@@ -199,13 +199,25 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
   } }), [rows, safeHeight, canRender]);
   const setDensity = (next: ApexDensity) => { if (props.density === undefined) setInternalDensity(next); props.onDensityChange?.(next); };
   const toolbarProps = mergeDOM<ApexRootDOM>({ className: 'apex-table-toolbar' }, slotProps.toolbar?.rootProps);
-  const toolbarChildren = <><SelectionSummary table={table} />{props.columnSettingsEnabled && <button data-apex-settings-trigger type="button" aria-expanded={settings} onClick={() => setSettings(!settings)}>{locale.columnSettings}</button>}</>;
+  /*
+   * 序号表头以齿轮图标提供列设置入口，行内仍显示原来的序号。
+   * 未启用序号列时保留工具栏入口，自定义工具栏继续获得原有控制能力。
+   */
+  const settingsTrigger = props.columnSettingsEnabled ? <button data-apex-settings-trigger type="button" className="apex-table-settings-trigger" aria-label={locale.columnSettings} title={locale.columnSettings} aria-haspopup="dialog" aria-expanded={settings} onClick={() => setSettings(!settings)}>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="m9 3-.5 2a8 8 0 0 0-1.7 1L4.8 5.4l-3 5.2 1.5 1.4a8 8 0 0 0 0 2l-1.5 1.4 3 5.2 2-.6a8 8 0 0 0 1.7 1l.5 2h6l.5-2a8 8 0 0 0 1.7-1l2 .6 3-5.2-1.5-1.4a8 8 0 0 0 0-2l1.5-1.4-3-5.2-2 .6a8 8 0 0 0-1.7-1L15 3Z" transform="translate(1.2 0) scale(.9)" /><circle cx="12" cy="12" r="3" /></svg>
+  </button> : null;
+  const toolbarChildren = <>{!props.showRowNumber && settingsTrigger}</>;
+  /*
+   * 选择统计与分页总数共享底栏；没有分页时也保留独立底栏。
+   * 顶部只在存在自定义工具栏或备用设置入口时占用高度。
+   */
+  const showPagination = props.pagination !== false && hasPagination;
   const nativeOffset = table.options.manualPagination && model.pagination ? model.pagination.pageIndex * model.pagination.pageSize : hasPagination && model.pagination ? model.pagination.pageIndex * model.pagination.pageSize : 0;
   const totalRows = unavailable ? undefined : hasPagination ? table.getPageCount() < 0 ? undefined : table.getRowCount() : rows.length;
   const headerMap = new Map(headers.flatMap((group) => group.headers).map((header) => [header.column.id, header]));
   return <UIContext.Provider value={ui}>
     <div ref={root} className={['apex-table', props.className].filter(Boolean).join(' ')} style={{ ...props.style, height: props.height ?? '100%', '--apex-geometry-row-height': `${safeHeight}px` } as CSSProperties} tabIndex={-1} data-density={density} aria-busy={props.loading || undefined}>
-      {(slots.toolbar || table.atoms.rowSelection || props.columnSettingsEnabled) && (slots.toolbar ? <slots.toolbar {...{ table, locale, density, setDensity, openColumnSettings: () => setSettings(true), rootProps: toolbarProps, children: toolbarChildren }} /> : <div {...toolbarProps}>{toolbarChildren}</div>)}
+      {(slots.toolbar || (!props.showRowNumber && props.columnSettingsEnabled)) && (slots.toolbar ? <slots.toolbar {...{ table, locale, density, setDensity, openColumnSettings: () => setSettings(true), rootProps: toolbarProps, children: toolbarChildren }} /> : <div {...toolbarProps}>{toolbarChildren}</div>)}
       {settings && <ColumnSettings table={table} width={dimensions.width} tracks={tracks} onClose={closeSettings} />}
       <div ref={viewport} className="apex-table-viewport" onScroll={(event) => {
         /*
@@ -218,7 +230,7 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
       }}>
         <table role="table" aria-label={props.name ?? locale.tableName} aria-rowcount={totalRows === undefined ? -1 : totalRows + 1} aria-colcount={tracks.length} className="apex-table-grid" style={{ width: Math.max(width, dimensions.width) }}>
           <thead role="rowgroup" className="apex-table-header"><tr role="row" aria-rowindex={1}>
-            {tracks.map((track, index) => track.kind === 'column' ? <HeaderCell key={`column:${track.key}`} table={table} track={track} index={index} tableId={tableId} header={headerMap.get(track.key)} /> : <th role="columnheader" scope="col" key={track.key} id={`${tableId}-col-${index}`} aria-colindex={index + 1} className="apex-table-header-cell" data-pinned={track.sticky || undefined} style={trackStyle(track)}>{track.kind === 'selection' ? <HeaderCheckbox table={table} unavailable={unavailable} /> : locale.rowNumber}</th>)}
+            {tracks.map((track, index) => track.kind === 'column' ? <HeaderCell key={`column:${track.key}`} table={table} track={track} index={index} tableId={tableId} header={headerMap.get(track.key)} /> : <th role="columnheader" scope="col" key={track.key} id={`${tableId}-col-${index}`} aria-colindex={index + 1} aria-label={track.kind === 'number' ? locale.rowNumber : undefined} className="apex-table-header-cell" data-pinned={track.sticky || undefined} style={trackStyle(track)}>{track.kind === 'selection' ? <HeaderCheckbox table={table} unavailable={unavailable} /> : settingsTrigger ?? locale.rowNumber}</th>)}
           </tr></thead>
           <tbody role="rowgroup" className="apex-table-body">
             {canRender && rows.length > 0 && <>
@@ -230,7 +242,7 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
         </table>
         {(unavailable || !rows.length || !hasColumns) && <BodyState props={props} error={configError} filtered={filtered} rows={safeHeight} height={dimensions.height} />}
       </div>
-      {props.pagination !== false && hasPagination && <Pagination table={table} unavailable={unavailable} pageSizeOptions={props.pagination ? props.pagination.pageSizeOptions : undefined} />}
+      {showPagination ? <Pagination table={table} unavailable={unavailable} pageSizeOptions={props.pagination ? props.pagination.pageSizeOptions : undefined} /> : table.atoms.rowSelection && <div className="apex-table-pagination"><SelectionSummary table={table} /></div>}
     </div>
   </UIContext.Provider>;
 }

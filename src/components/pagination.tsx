@@ -5,6 +5,11 @@ import type { ApexButtonDOM, ApexInputDOM, ApexSelectDOM } from '../types';
 import { useUI } from '../internal/context';
 import { mergeDOM } from '../internal/dom';
 import type { RuntimeTable } from '../internal/runtime';
+/*
+ * 复用表格内置选择统计，让选择数量紧随总数展示。
+ * 统计仍独立订阅选择状态，并保留清空选择和自定义插槽。
+ */
+import { SelectionSummary } from './selection';
 
 /*
  * 页码校正只发生在输入控件提交边界，所有动作直接调用原生方法。
@@ -33,6 +38,7 @@ function PaginationView({ table, pagination, unavailable, pageSizeOptions }: { t
   const children = <>
     <select {...pageSizeProps}>{sizes.map((size) => <option key={size} value={size}>{locale.perPage(size)}</option>)}</select>
     <span className="apex-table-total">{unavailable ? '—' : unknown ? locale.unknownTotal : locale.total(total ?? 0)}</span>
+    <SelectionSummary table={table} />
     <div className="apex-table-page-buttons">
       <button type="button" {...getPageButtonProps(pagination.pageIndex - 1)} aria-label={locale.previousPage}>‹</button>
       {pages.map((index, position) => <span className="apex-table-page-item" key={index}>{position > 0 && index - pages[position - 1] > 1 && <span aria-hidden="true">…</span>}<button type="button" {...getPageButtonProps(index)}>{index + 1}</button></span>)}

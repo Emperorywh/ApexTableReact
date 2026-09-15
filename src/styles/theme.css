@@ -105,6 +105,15 @@
   margin-left: 6px;
   }
 
+/*
+ * 设置按钮沿用表头底色与操作色，以齿轮作为唯一可见内容。
+ * 悬停和键盘焦点继续使用表格现有的交互反馈。
+ */
+.apex-table .apex-table-settings-trigger { padding: 0;
+  background: none;
+  border: 0;
+  }
+
 .apex-table [aria-sort='ascending'] .apex-table-sort-icon, .apex-table [aria-sort='descending'] .apex-table-sort-icon { color: var(--apex-table-accent-color);
   }
 

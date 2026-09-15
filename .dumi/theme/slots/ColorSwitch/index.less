@@ -1,0 +1,103 @@
+/*
+ * 菜单颜色仅作用于文档主题控件，避免影响表格和示例内的按钮。
+ * 使用 dumi 实际生效的主题属性，手动切换和跟随系统共用同一套样式。
+ */
+.apex-docs-color-switch {
+  --apex-docs-menu-bg: #fff;
+  --apex-docs-menu-text: #4f5866;
+  --apex-docs-menu-border: #e4e9ec;
+  --apex-docs-menu-active: #1677ff;
+  --apex-docs-menu-hover: #edf4ff;
+  --apex-docs-menu-shadow: 0 8px 28px #2436511f;
+
+  position: relative;
+  flex-shrink: 0;
+  font-size: 14px;
+  line-height: 1.5;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  button {
+    font: inherit;
+    color: var(--apex-docs-menu-text);
+    cursor: pointer;
+  }
+
+  button:focus-visible {
+    outline: 2px solid var(--apex-docs-menu-active);
+    outline-offset: 2px;
+  }
+
+  .apex-docs-color-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--apex-docs-menu-border);
+    border-radius: 8px;
+    background: var(--apex-docs-menu-bg);
+
+    &:hover,
+    &[aria-expanded='true'] {
+      color: var(--apex-docs-menu-active);
+      border-color: var(--apex-docs-menu-active);
+    }
+  }
+
+  .apex-docs-color-menu {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 10px);
+    inset-inline-end: 0;
+    width: 160px;
+    padding: 6px;
+    box-sizing: border-box;
+    border: 1px solid var(--apex-docs-menu-border);
+    border-radius: 10px;
+    background: var(--apex-docs-menu-bg);
+    box-shadow: var(--apex-docs-menu-shadow);
+  }
+
+  .apex-docs-color-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 9px 10px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    text-align: start;
+    white-space: nowrap;
+
+    &:hover,
+    &:focus-visible,
+    &[aria-checked='true'] {
+      color: var(--apex-docs-menu-active);
+      background: var(--apex-docs-menu-hover);
+    }
+  }
+
+  .apex-docs-color-check {
+    margin-inline-start: auto;
+  }
+}
+
+/*
+ * 深色菜单显式定义文字、背景及焦点色，避免切换后继承浅色外观。
+ * 颜色范围限制在本地插槽，不改变组件库默认的浅色主题契约。
+ */
+html[data-prefers-color='dark'] .apex-docs-color-switch {
+  --apex-docs-menu-bg: #1b1d21;
+  --apex-docs-menu-text: #d0d5dd;
+  --apex-docs-menu-border: #363b44;
+  --apex-docs-menu-active: #69a8ff;
+  --apex-docs-menu-hover: #23334b;
+  --apex-docs-menu-shadow: 0 8px 28px #0006;
+}

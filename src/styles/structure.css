@@ -93,6 +93,22 @@
 .apex-table-sort-icon { flex: none;
   }
 
+/*
+ * 齿轮入口在窄序号列内居中，不改变现有列宽和行高。
+ * 图标不收缩，按钮保留完整的键盘操作区域。
+ */
+.apex-table-settings-trigger { display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 24px;
+  height: 30px;
+  margin: auto;
+  }
+
+.apex-table-settings-trigger svg { flex: none;
+  }
+
 .apex-table-checkbox { margin: auto;
   width: 16px;
   height: 16px;

@@ -8,5 +8,10 @@ export default defineConfig({
   outputPath: 'docs-dist',
   themeConfig: {
     name: 'ApexTableReact',
+    /*
+     * 文档首次访问采用浅色，保留亮色、暗色和跟随系统三种偏好。
+     * 本地主题插槽沿用 dumi 的偏好管理，刷新及路由切换后保持选择。
+     */
+    prefersColor: { default: 'light', switch: true },
   },
 });

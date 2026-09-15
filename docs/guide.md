@@ -33,9 +33,11 @@ nav:
 
 `pagination={false}` 隐藏分页控件；如果仍传入 `request`、`state.pagination`、`initialState.pagination` 或 `manualPagination`，分页模型依然启用。没有这些分页配置时使用连续列表。
 
-选择传 `showSelectionColumn`，列设置传 `columnSettingsEnabled`。列定义使用普通对象，`sortFn: 'basic'`、`filterFn: 'includesString'` 等内置名称可直接使用，自定义函数也可直接传入。
+选择传 `showSelectionColumn`，列设置传 `columnSettingsEnabled`。开启列设置后，默认在行号列顶部显示齿轮入口；显式传 `showRowNumber={false}` 时隐藏行号列并使用工具栏入口。列定义使用普通对象，`sortFn: 'basic'`、`filterFn: 'includesString'` 等内置名称可直接使用，自定义函数也可直接传入。
 
 ## 受控状态与实例 API
+
+data 模式支持十种 antd 内置单元格。通过 `meta.apex.editor` 选择控件，同时传 `editable` 和 `onDataChange={setData}` 开启编辑。完整配置、值类型和示例见 [单元格编辑](/editing)。
 
 使用 `state` 和同名 `on…Change` 回调即可管理状态，回调接收原生 updater，可直接传 React state setter。只需初始值时使用 `initialState`，后续更新交给组件；两者同时包含同一切片时，以 `state` 为准。
 

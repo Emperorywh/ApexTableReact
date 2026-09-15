@@ -21,6 +21,12 @@ import { HeaderCheckbox, RowCheckbox, SelectionSummary } from '../components/sel
 import { ResizeHandle } from '../components/resize';
 import { Pagination } from '../components/pagination';
 import { ColumnSettings } from '../components/column-settings';
+/*
+ * 内置编辑器复用原有单元格边界，保留插槽对最终内容的控制权。
+ * 数据入口单独提供编辑上下文，其他入口仍可显示只读控件。
+ */
+import { BuiltinCell, EditorTheme } from '../editors/cell';
+import { EditingContext, useEditing } from '../internal/editing';
 
 /*
  * 渲染层接收原生实例，仅订阅影响模型和列布局的切片。
@@ -43,7 +49,8 @@ const CellContent = memo(function CellContent({ table, cell }: { table: RuntimeT
    * 插槽每次获得本次传入的原生 React 实例，不能保留旧外层对象。
    * 未变化的原生 cell 复用渲染元素，避免仅实例外层变化就执行业务渲染器。
    */
-  const children = useMemo(() => <table.FlexRender cell={cell} />, [table.FlexRender, cell]);
+  const editor = cell.column.columnDef.meta?.apex?.editor;
+  const children = useMemo(() => editor ? <BuiltinCell cell={cell} editor={editor} /> : <table.FlexRender cell={cell} />, [table.FlexRender, cell, editor]);
   return slots.cellContent ? <slots.cellContent {...{ table, cell, locale, rootProps, children }} /> : <div {...rootProps}>{children}</div>;
 }, (previous, next) => previous.cell === next.cell && previous.table === next.table);
 
@@ -135,7 +142,12 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
   const validOverscan = Number.isInteger(rawOverscan) && rawOverscan >= 0;
   const overscan = validOverscan ? rawOverscan : 8;
   const virtual = props.virtualization === undefined || props.virtualization === 'auto' ? !hasPagination || rows.length > 200 : props.virtualization !== false;
-  const tracks = useMemo(() => calculateLayout(table, dimensions.width, props.showSelectionColumn ?? false, props.showRowNumber ?? false), [table.store, table.options.columns, table.options.defaultColumn, model.columnOrder, model.columnVisibility, model.columnSizing, model.columnPinning, dimensions.width, props.showSelectionColumn, props.showRowNumber]);
+  /*
+   * 启用列设置时默认展示序号列，让齿轮入口直接位于行号上方。
+   * 显式关闭序号列或自定义其宽度、固定位置时，仍尊重调用方配置。
+   */
+  const showRowNumber = props.showRowNumber ?? !!props.columnSettingsEnabled;
+  const tracks = useMemo(() => calculateLayout(table, dimensions.width, props.showSelectionColumn ?? false, showRowNumber), [table.store, table.options.columns, table.options.defaultColumn, model.columnOrder, model.columnVisibility, model.columnSizing, model.columnPinning, dimensions.width, props.showSelectionColumn, showRowNumber]);
   const width = tracks.reduce((sum, track) => sum + track.size, 0);
   const coreRows = table.getCoreRowModel().rows;
   const identityError = useMemo(() => {
@@ -217,12 +229,12 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
   const toolbarProps = mergeDOM<ApexRootDOM>({ className: 'apex-table-toolbar' }, slotProps.toolbar?.rootProps);
   /*
    * 序号表头以齿轮图标提供列设置入口，行内仍显示原来的序号。
-   * 未启用序号列时保留工具栏入口，自定义工具栏继续获得原有控制能力。
+   * 显式关闭序号列时保留工具栏入口，自定义工具栏继续获得原有控制能力。
    */
   const settingsTrigger = props.columnSettingsEnabled ? <button data-apex-settings-trigger type="button" className="apex-table-settings-trigger" aria-label={locale.columnSettings} title={locale.columnSettings} aria-haspopup="dialog" aria-expanded={settings} onClick={() => setSettings(!settings)}>
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="m9 3-.5 2a8 8 0 0 0-1.7 1L4.8 5.4l-3 5.2 1.5 1.4a8 8 0 0 0 0 2l-1.5 1.4 3 5.2 2-.6a8 8 0 0 0 1.7 1l.5 2h6l.5-2a8 8 0 0 0 1.7-1l2 .6 3-5.2-1.5-1.4a8 8 0 0 0 0-2l1.5-1.4-3-5.2-2 .6a8 8 0 0 0-1.7-1L15 3Z" transform="translate(1.2 0) scale(.9)" /><circle cx="12" cy="12" r="3" /></svg>
   </button> : null;
-  const toolbarChildren = <>{!props.showRowNumber && settingsTrigger}</>;
+  const toolbarChildren = <>{!showRowNumber && settingsTrigger}</>;
   /*
    * 选择统计与分页总数共享底栏；没有分页时也保留独立底栏。
    * 顶部只在存在自定义工具栏或备用设置入口时占用高度。
@@ -233,7 +245,7 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
   const headerMap = new Map(headers.flatMap((group) => group.headers).map((header) => [header.column.id, header]));
   return <UIContext.Provider value={ui}>
     <div ref={root} className={['apex-table', props.className].filter(Boolean).join(' ')} style={{ ...props.style, height: props.height ?? '100%', '--apex-geometry-row-height': `${safeHeight}px` } as CSSProperties} tabIndex={-1} data-density={density} aria-busy={props.loading || undefined}>
-      {(slots.toolbar || (!props.showRowNumber && props.columnSettingsEnabled)) && (slots.toolbar ? <slots.toolbar {...{ table, locale, density, setDensity, openColumnSettings: () => setSettings(true), rootProps: toolbarProps, children: toolbarChildren }} /> : <div {...toolbarProps}>{toolbarChildren}</div>)}
+      {(slots.toolbar || (!showRowNumber && props.columnSettingsEnabled)) && (slots.toolbar ? <slots.toolbar {...{ table, locale, density, setDensity, openColumnSettings: () => setSettings(true), rootProps: toolbarProps, children: toolbarChildren }} /> : <div {...toolbarProps}>{toolbarChildren}</div>)}
       {settings && <ColumnSettings table={table} width={dimensions.width} tracks={tracks} onClose={closeSettings} />}
       <div ref={viewport} className="apex-table-viewport" onScroll={(event) => {
         /*
@@ -267,7 +279,7 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
  * 引用继续传递到实际表格，保留聚焦与滚动定位能力。
  */
 function NativeTable({ props, imperativeRef }: { props: RuntimeProps; imperativeRef: ForwardedRef<ApexTableRef> }) {
-  return <props.table.Subscribe selector={selectModelState}>{(model) => <Surface props={props} model={model} imperativeRef={imperativeRef} />}</props.table.Subscribe>;
+  return <EditorTheme config={props.editorConfig} getPopupContainer={props.getPopupContainer}><props.table.Subscribe selector={selectModelState}>{(model) => <Surface props={props} model={model} imperativeRef={imperativeRef} />}</props.table.Subscribe></EditorTheme>;
 }
 
 /*
@@ -290,7 +302,8 @@ const managedOptionDefaults = {
  * 本地与外部手动分页仍直接使用原来的选项管理路径。
  */
 function ManagedTable({ props, imperativeRef }: { props: ApexTableReactLocalProps<RowData>; imperativeRef: ForwardedRef<ApexTableRef> }) {
-  const { tableRef, ...options } = props;
+  const { tableRef, editable, onDataChange, ...options } = props;
+  const editing = useEditing({ ...props, editable, onDataChange });
   const paginationEnabled = !!props.pagination || !!props.manualPagination || !!props.state?.pagination || !!props.initialState?.pagination;
   const selectionEnabled = !!props.showSelectionColumn || !!props.enableRowSelection;
   const table: ApexTableInstance<RowData> = useTable({
@@ -321,13 +334,18 @@ function ManagedTable({ props, imperativeRef }: { props: ApexTableReactLocalProp
     manualPagination: props.manualPagination ?? !paginationEnabled,
     manualSorting: props.manualSorting ?? false,
     manualFiltering: props.manualFiltering ?? false,
+    /*
+     * 编辑时数据变化不自动跳回第一页，用户显式配置仍优先。
+     * 排序和筛选继续由原生行模型计算，写入位置使用原始行身份。
+     */
+    autoResetPageIndex: props.autoResetPageIndex ?? (editable ? false : undefined),
   }, () => null);
   /*
    * 实例引用只在提交后公开，由 React 自动处理引用变更与卸载清理。
    * 页面通过原生 setter 控制表格，原有 ref 仍专门负责聚焦和滚动。
    */
   useImperativeHandle(tableRef, () => table, [table]);
-  return <NativeTable props={{ ...props, table, paginationEnabled, selectionEnabled } as unknown as RuntimeProps} imperativeRef={imperativeRef} />;
+  return <EditingContext.Provider value={editing}><NativeTable props={{ ...props, table, paginationEnabled, selectionEnabled } as unknown as RuntimeProps} imperativeRef={imperativeRef} /></EditingContext.Provider>;
 }
 
 /*
@@ -336,7 +354,11 @@ function ManagedTable({ props, imperativeRef }: { props: ApexTableReactLocalProp
  */
 function RequestTable({ props, imperativeRef }: { props: ApexTableReactRequestProps<RowData>; imperativeRef: ForwardedRef<ApexTableRef> }) {
   const dataProps = useRequestProps(props);
-  return <ManagedTable props={dataProps} imperativeRef={imperativeRef} />;
+  /*
+   * 自动请求结果没有业务侧数据回写通道，运行时同样禁止编辑。
+   * 需要远程保存时由业务使用 data 模式管理加载和提交。
+   */
+  return <ManagedTable props={{ ...dataProps, editable: false, onDataChange: undefined }} imperativeRef={imperativeRef} />;
 }
 
 /*

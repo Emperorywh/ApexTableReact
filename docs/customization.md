@@ -23,7 +23,7 @@ nav:
 | checkbox | 真实 input 的 controlProps；indeterminate 同步 DOM |
 | resizeHandle | 手柄 handleProps、数值输入 widthInputProps |
 | pagination | rootProps/getPageButtonProps(index)/pageSizeProps/jumpInputProps |
-| columnSettings | 面板 rootProps；保留 children 可复用内置权限 |
+| columnSettings | 模态弹窗内容 rootProps；转发 ref 并保留 children 可复用拖动、编辑、权限和草稿提交 |
 | menu | triggerProps/contentProps/getItemProps(id) |
 | tooltip | triggerProps/contentProps；提示不作为焦点目标 |
 | loading/empty/error | rootProps、可选 retryButtonProps |
@@ -39,7 +39,11 @@ slots 接收 React 组件，支持组件内部 Hook、memo 和 forwardRef。建�
 
 getPopupContainer 应选择主题作用域内的容器，或由业务给外部浮层容器提供对应样式和变量。
 
+列配置使用原生 `dialog.showModal()` 进入浏览器顶层，背景不可交互、Tab 焦点保留在弹窗内；默认在表格内部挂载，也支持 `getPopupContainer`。打开时继承来源表格的主题变量。确认按钮与提示文字使用 `--apex-table-accent-color`，交互行使用 `--apex-table-row-selected-bg`，提示底色和边框沿用表格主题，默认统一为蓝色。
+
 ## 文案
+
+内置单元格控件使用 antd 样式，通过 `editorConfig.theme` 配置控件主题，`editorConfig.locale` 配置日期等控件文案；它们与表格自身的 CSS 变量、locale 分别管理。`unstyled` 入口不加载 Apex 自有样式，但 antd 控件仍具有组件样式。
 
 locale 支持局部覆盖并回退简体中文。Localization 示例仅覆盖选择场景的英文文案，展示数量格式化与可访问名称函数。需要完整替换时，用 ApexLocale 声明完整对象。业务列名、菜单项和提示内容由业务自己翻译；加载、空态和错误在各自示例中演示。
 
@@ -61,4 +65,4 @@ save(state) 默认防抖 300ms，仅保存 columnOrder/columnVisibility/columnSi
 
 版本变化默认回退，可显式 migrate；损坏、存储不可用、配额和迁移错误通过 onDiagnostic 反馈。丢弃删除/无权限列，宽度按当前 min/max 约束，恢复边界遵守锁定。没有跨标签同步，不保存业务数据、选择、查询或密度。
 
-Preferences 示例只演示读取、显式保存和清除列布局。打开列设置修改布局后，点击“保存列布局”，刷新页面即可恢复；点击“清除并恢复默认”仅清理该示例的记录。恢复不自动写回。迁移和多身份隔离按上面的适配器接口在业务中按需接入。
+Preferences 示例演示读取、显式保存和清除列布局。打开列设置修改并确认后，点击“保存列布局”，刷新页面即可恢复；点击“清除并恢复默认”仅清理该示例的记录。恢复不自动写回。迁移和多身份隔离按上面的适配器接口在业务中按需接入。

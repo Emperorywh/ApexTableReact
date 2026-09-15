@@ -101,6 +101,10 @@ export default function App() {
 
 只需连续列表时，传入 `columns`、`data` 和 `height` 即可；未配置分页时不会默认截取前十条数据。
 
+## 单元格编辑
+
+需要本地编辑时，通过列的 `meta.apex.editor` 指定 antd 控件，并传入 `editable` 和 `onDataChange={setData}`。内置 Checkbox、ColorPicker、DatePicker、Input、InputNumber、Radio、Select、Switch、TimePicker、Image，详见 [单元格编辑](./docs/editing.md)。
+
 ## 服务端分页
 
 将 `data` 替换为 `request`。组件在首次挂载、分页变化和错误重试时调用请求函数，自动维护当前页、总数和加载状态。

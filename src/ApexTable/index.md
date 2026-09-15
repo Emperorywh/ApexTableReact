@@ -57,7 +57,7 @@ group:
 
 ### 8. 列设置
 
-打开表格上方的列设置，调整显隐、顺序、固定位置和列宽。
+点击行号列顶部的齿轮打开配置弹窗，拖动序号调整同一固定区域内的顺序，设置列宽、显隐，并通过下拉框选择固定位置。点击“确定”应用，点击“取消”放弃修改；恢复默认也在确认后生效。启用列设置时默认显示行号列。
 
 <code src="../../docs/demos/ColumnSettings.tsx"></code>
 
@@ -156,3 +156,9 @@ group:
 调整列设置后显式保存，刷新页面恢复布局。清除操作仅移除这个示例的存储记录。
 
 <code src="../../docs/demos/Preferences.tsx"></code>
+
+### 24. 内置单元格与受控编辑
+
+data 模式通过 `editable` 和 `onDataChange` 开启编辑，列的 `meta.apex.editor` 选择 antd 控件。示例包含十种组件，支持排序、分页、虚拟滚动、只读切换和获取全部数据。Image 支持缩略图预览与图片地址编辑，上传由业务接入。
+
+<code src="../../docs/demos/EditableCells.tsx"></code>

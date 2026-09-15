@@ -1,17 +1,24 @@
 import type { Cell, CellData, Column, ColumnDef, Header, PaginationState, ReactTable, Row, RowData, RowSelectionState, TableFeatures, TableOptions, TableState } from '@tanstack/react-table';
 import type { managedFeatures } from './internal/features';
+/*
+ * 编辑器类型独立声明，统一从包入口导出，业务无需访问内部实现。
+ * 列元数据沿用原生行泛型，编辑权限和属性工厂能够推断业务记录。
+ */
+import type { ApexCellChange, ApexCellEditor, ApexEditorConfig } from './editors/types';
+export type { ApexCellChange, ApexCellContext, ApexCellEditor, ApexEditorConfig, ApexEditorPropsMap, ApexEditorType, ApexSelectValue } from './editors/types';
 import type { ButtonHTMLAttributes, ComponentPropsWithRef, ComponentType, CSSProperties, HTMLAttributes, InputHTMLAttributes, MouseEvent, ReactNode, Ref, SelectHTMLAttributes } from 'react';
 
 /*
- * 元数据只增加界面信息；业务可以通过原生 columnMeta 槽与本类型交叉合并。
+ * 元数据提供界面和内置编辑器配置；业务可通过原生 columnMeta 槽交叉合并。
  * 全局声明合并保留已有业务字段，不重复定义原生尺寸或权限字段。
  */
-export interface ApexColumnMeta {
+export interface ApexColumnMeta<D = RowData> {
   align?: 'start' | 'center' | 'end';
   flex?: number;
   pinPriority?: number;
   canReorder?: boolean;
   label?: string;
+  editor?: ApexCellEditor<D>;
 }
 declare module '@tanstack/react-table' {
   /*
@@ -20,7 +27,7 @@ declare module '@tanstack/react-table' {
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TFeatures extends TableFeatures, TData extends RowData, TValue extends CellData> {
-    apex?: ApexColumnMeta;
+    apex?: ApexColumnMeta<TData>;
   }
 }
 export type ApexDensity = 'compact' | 'standard' | 'comfortable';
@@ -45,6 +52,20 @@ export interface ApexLocale {
   error: string;
   retry: string;
   columnSettings: string;
+  /*
+   * 配置弹窗文案统一开放，键盘拖动提示也可由业务本地化。
+   * 固定位置下拉框统一表达不固定、左侧固定与右侧固定。
+   */
+  fieldName: string;
+  pinPosition: string;
+  displayStatus: string;
+  settingsHint: string;
+  cancel: string;
+  confirm: string;
+  invalidColumnWidth: string;
+  reorderBlocked: string;
+  dragColumn: string;
+  dragInstructions: string;
   close: string;
   resetLayout: string;
   clearSelection: string;
@@ -79,6 +100,11 @@ export interface ApexLocale {
   comfortable: string;
   density: string;
   menu: string;
+  /*
+   * 图片单元格的地址输入与可访问名称共用翻译入口。
+   * 上传流程由业务接入，内置编辑器只修改图片地址。
+   */
+  imageAddress: string;
   selectRow(id: string): string;
   sortColumn(label: string): string;
   resizeColumn(label: string): string;
@@ -93,7 +119,7 @@ export interface ApexLocale {
  * 完整 props 包仍包含必要属性，替换控件必须转发到对应真实元素。
  */
 type Geometry = 'position' | 'display' | 'width' | 'minWidth' | 'maxWidth' | 'height' | 'minHeight' | 'maxHeight' | 'top' | 'bottom' | 'left' | 'right' | 'inset' | 'transform' | 'overflow' | 'overflowX' | 'overflowY' | 'flex' | 'flexBasis' | 'gridTemplateColumns' | 'boxSizing' | 'zIndex';
-type Protected = 'id' | 'role' | 'tabIndex' | 'children' | 'style' | 'dangerouslySetInnerHTML' | 'checked' | 'defaultChecked' | 'disabled' | 'type' | 'value' | 'defaultValue' | 'min' | 'max' | 'step' | 'aria-label' | 'aria-labelledby' | 'aria-checked' | 'aria-sort' | 'aria-rowindex' | 'aria-colindex' | 'aria-rowcount' | 'aria-colcount' | 'aria-busy' | 'aria-expanded' | 'aria-controls' | 'aria-haspopup' | 'aria-hidden' | 'aria-current' | 'aria-orientation' | 'aria-valuenow' | 'aria-valuemin' | 'aria-valuemax' | 'aria-live';
+type Protected = 'id' | 'role' | 'tabIndex' | 'children' | 'style' | 'dangerouslySetInnerHTML' | 'checked' | 'defaultChecked' | 'disabled' | 'type' | 'value' | 'defaultValue' | 'min' | 'max' | 'step' | 'aria-label' | 'aria-labelledby' | 'aria-checked' | 'aria-sort' | 'aria-rowindex' | 'aria-colindex' | 'aria-rowcount' | 'aria-colcount' | 'aria-busy' | 'aria-expanded' | 'aria-controls' | 'aria-haspopup' | 'aria-hidden' | 'aria-current' | 'aria-orientation' | 'aria-valuenow' | 'aria-valuemin' | 'aria-valuemax' | 'aria-live' | 'aria-modal';
 export type ApexDOMExtension<T> = Omit<T, Protected> & { style?: Omit<CSSProperties, Geometry> };
 export type ApexRootDOM = HTMLAttributes<HTMLDivElement> & { ref?: Ref<HTMLDivElement> };
 export type ApexButtonDOM = ButtonHTMLAttributes<HTMLButtonElement> & { ref?: Ref<HTMLButtonElement> };
@@ -168,6 +194,10 @@ export interface ApexTableProps<F extends TableFeatures, D extends RowData, S = 
   onDensityChange?(value: ApexDensity): void;
   virtualization?: 'auto' | boolean | { overscan?: number };
   showSelectionColumn?: ApexTrack;
+  /*
+   * 启用列设置时默认展示序号列，并在表头显示齿轮入口。
+   * 传 false 可关闭序号列，传对象可配置列宽和固定位置。
+   */
   showRowNumber?: ApexTrack;
   columnSettingsEnabled?: boolean;
   pagination?: boolean | { pageSizeOptions?: number[] };
@@ -183,6 +213,11 @@ export interface ApexTableProps<F extends TableFeatures, D extends RowData, S = 
   style?: ApexTableStyle;
   onDiagnostic?(diagnostic: ApexDiagnostic): void;
   getPopupContainer?(): HTMLElement;
+  /*
+   * 内置单元格使用独立的 antd 配置，默认采用中文和紧凑控件尺寸。
+   * 可按表格覆盖主题和语言，不修改消费项目的全局配置。
+   */
+  editorConfig?: ApexEditorConfig;
 }
 
 /*
@@ -219,7 +254,16 @@ export type ApexTableReactRequestProps<D extends RowData> = Omit<ApexTableReactB
  * 本地数据和自动请求是互斥的数据来源，避免外部状态覆盖请求结果。
  * 原生实例入口同样禁止混入 request，保留已有数据模式的类型名称。
  */
-export type ApexTableReactLocalProps<D extends RowData> = ApexTableReactBaseProps<D> & { data: D[]; request?: never };
+export type ApexTableReactLocalProps<D extends RowData> = ApexTableReactBaseProps<D> & {
+  data: D[];
+  request?: never;
+  /*
+   * data 与 onDataChange 组成受控编辑接口，默认仍为只读。
+   * 每次有效修改返回新数组及变更详情，不直接改写传入记录。
+   */
+  editable?: boolean;
+  onDataChange?(data: D[], change: ApexCellChange<D>): void;
+};
 export type ApexTableReactDataProps<D extends RowData> = ApexTableReactLocalProps<D> | ApexTableReactRequestProps<D>;
 export type ApexTableReactProps<D extends RowData, F extends TableFeatures = ApexTableFeatures, S = TableState<F>> = ApexTableReactDataProps<D> | (ApexTableProps<F, D, S> & { columns?: never; data?: never; request?: never; tableRef?: never });
 export type ApexTableReactRef = ApexTableRef;

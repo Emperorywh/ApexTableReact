@@ -5,8 +5,20 @@ import type { ApexLocale } from './types';
  * 数量格式化同样开放，避免其他语言仍混入中文单位。
  */
 export const zhCN: ApexLocale = {
+  /*
+   * 内置图片编辑器提供地址输入，默认文案可由 locale 覆盖。
+   * antd 弹层的日期与按钮文案由 editorConfig 独立配置。
+   */
+  imageAddress: '图片地址',
   tableName: '数据表格', loading: '正在加载…', empty: '暂无数据', noMatches: '没有匹配的结果', noColumns: '没有可见列，请在列设置中选择要显示的列',
   error: '加载失败', retry: '重试', columnSettings: '列设置', close: '关闭', resetLayout: '恢复默认', clearSelection: '清空选择',
+  /*
+   * 弹窗采用草稿提交，并为拖动、字段编辑提供可访问的说明。
+   * 所有新增文字均支持通过 locale 覆盖。
+   */
+  fieldName: '字段名', pinPosition: '固定位置', displayStatus: '显示状态', settingsHint: '拖动序号调整顺序，可设置列宽、显示状态和固定位置',
+  cancel: '取消', confirm: '确定', invalidColumnWidth: '请输入允许范围内的有效列宽', reorderBlocked: '只能在相同固定区域内排序，且不能跨越锁定列',
+  dragColumn: '拖动排序', dragInstructions: '按空格开始拖动，使用上下方向键调整顺序，再按空格放下，按 Esc 取消拖动。',
   selectPage: '选择当前页可选行', selectResults: '选择全部筛选结果', rowNumber: '序号', previousPage: '上一页', nextPage: '下一页',
   pageSize: '每页数量', jumpToPage: '跳至', pageUnit: '页', pinStart: '固定在左侧', pinEnd: '固定在右侧', unpin: '取消固定',
   moveUp: '上移', moveDown: '下移', width: '列宽', showColumn: '显示列', minOneColumn: '至少保留一列业务信息', pinSpace: '固定列需为中间区域保留至少 160px',

@@ -22,7 +22,11 @@ export function composeRefs<T>(...refs: (Ref<T> | undefined)[]): Ref<T> {
     });
   };
 }
-const protectedKeys = new Set(['id', 'role', 'tabIndex', 'children', 'dangerouslySetInnerHTML', 'checked', 'indeterminate', 'defaultChecked', 'disabled', 'type', 'value', 'defaultValue', 'min', 'max', 'step', 'aria-label', 'aria-labelledby', 'aria-checked', 'aria-sort', 'aria-rowindex', 'aria-colindex', 'aria-rowcount', 'aria-colcount', 'aria-busy', 'aria-expanded', 'aria-controls', 'aria-haspopup', 'aria-hidden', 'aria-current', 'aria-orientation', 'aria-valuenow', 'aria-valuemin', 'aria-valuemax', 'aria-live']);
+/*
+ * 模态语义属于弹窗内部约束，插槽不能把背景不可交互的状态改为普通面板。
+ * 与其他必要的可访问属性一致，运行时忽略外部的 aria-modal 覆盖。
+ */
+const protectedKeys = new Set(['id', 'role', 'tabIndex', 'children', 'dangerouslySetInnerHTML', 'checked', 'indeterminate', 'defaultChecked', 'disabled', 'type', 'value', 'defaultValue', 'min', 'max', 'step', 'aria-label', 'aria-labelledby', 'aria-checked', 'aria-sort', 'aria-rowindex', 'aria-colindex', 'aria-rowcount', 'aria-colcount', 'aria-busy', 'aria-expanded', 'aria-controls', 'aria-haspopup', 'aria-hidden', 'aria-current', 'aria-orientation', 'aria-valuenow', 'aria-valuemin', 'aria-valuemax', 'aria-live', 'aria-modal']);
 const geometryKeys = new Set(['position', 'display', 'width', 'minWidth', 'maxWidth', 'height', 'minHeight', 'maxHeight', 'top', 'bottom', 'left', 'right', 'inset', 'transform', 'overflow', 'overflowX', 'overflowY', 'flex', 'flexBasis', 'gridTemplateColumns', 'boxSizing', 'zIndex']);
 type DOMBag = Record<string, unknown>;
 

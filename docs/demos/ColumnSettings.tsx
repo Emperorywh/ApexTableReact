@@ -2,8 +2,8 @@ import { ApexTableReact } from 'apex-table-react';
 import type { ApexColumnDef } from 'apex-table-react';
 
 /*
- * 列设置集中展示显隐、调序、固定和宽度调整，名称列不可隐藏。
- * 本示例直接传入列、数据和功能 props，组件自动管理实例并加载样式。
+ * 齿轮打开配置弹窗，支持拖动排序、显隐、固定位置下拉选择和列宽调整。
+ * 所有操作确认后生效，取消放弃草稿；名称列不可隐藏，固定分区内可排序。
  */
 type Item = { id: string; name: string; stock: number };
 const data: Item[] = [

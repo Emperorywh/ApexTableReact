@@ -1,6 +1,9 @@
 # 变更记录
 ## 未发布
 
+- 新增 `ref.reload()` 与 `reload({ resetPageIndex: true })`，主动刷新保留列布局、排序、筛选及选择状态。`request` 新增 sorting、columnFilters、globalFilter 参数，条件变化自动请求并默认回到第一页，支持受控状态及原生实例 setter。
+- 请求模式的 `manualSorting/manualFiltering` 默认值改为 true，由服务端处理完整查询；原有当前页本地排序/筛选可显式设置为 false。`autoResetPageIndex={false}` 保留条件变化前的页码，响应数据更新本身不再触发分页重置。
+
 - 接入 antd 6.6.4，新增十种内置单元格；data 模式支持 editable / onDataChange 受控编辑、列级权限、嵌套字段和计算列回写，补充数据获取示例与回归测试。
 
 - 新增 `request` 服务端分页入口，自动管理数据、总数、分页变化、加载、错误重试与过期请求；简化服务端分页示例并导出请求类型。

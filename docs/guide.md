@@ -27,9 +27,11 @@ nav:
 
 本地分页传 `pagination` 或 `pagination={{ pageSizeOptions: [5, 10, 20] }}`；初始页通过 `initialState.pagination` 设置。没有分页配置时保持连续列表，不会默认截取前十条。
 
-服务器分页列表只需传 `request`，接收 `{ pageIndex, pageSize, signal }` 并返回 `{ data, rowCount }`。组件自动启用服务端分页，管理数据、总数、分页变化、加载和错误重试。页码从 0 开始，默认每页 10 条，可通过 `initialState.pagination` 设置初始分页。无需传入 `data`、`rowCount`、`manualPagination`、`onPaginationChange` 或 `loading`。
+服务器分页列表只需传 `request`，接收 `{ pageIndex, pageSize, sorting, columnFilters, globalFilter, signal }` 并返回 `{ data, rowCount }`。组件自动协调服务端分页、排序与筛选，管理数据、总数、加载和错误重试。页码从 0 开始，默认每页 10 条，可通过 `initialState.pagination` 设置初始分页。无需传入 `data`、`rowCount`、`manualPagination`、`onPaginationChange` 或 `loading`。
 
-`request` 可直接使用内联函数，不会因函数引用变化重复请求。业务可将 `signal` 传给 `fetch`；组件在切页和卸载时取消旧信号，并丢弃过期响应。自动请求仅覆盖分页；需要自行协调服务端排序、筛选或外部请求库时，仍可传 `data`、`rowCount` 和 `manualPagination/manualSorting/manualFiltering`，使用原有受控回调发请求。
+`request` 可直接使用内联函数，不会因函数引用变化重复请求。业务可将 `signal` 传给 `fetch`；组件在查询变化和卸载时取消旧信号，并丢弃过期响应。排序仍通过 `enableSorting` 开启，筛选通过 `state.columnFilters/state.globalFilter` 及对应回调接入。服务端应先筛选、排序再分页，rowCount 返回筛选后总数；条件变化默认回到第一页，可用 `autoResetPageIndex={false}` 保留页码。显式设置 `manualSorting/manualFiltering={false}` 可沿用当前页本地计算。外部请求库仍可用 `data`、`rowCount` 和 manual 选项自行管理。
+
+主动刷新使用 `ref.current?.reload()`，默认保留当前页；`ref.current?.reload({ resetPageIndex: true })` 从第一页刷新。引用类型为 `ApexTableRef`，原有 focus/scrollToRow 方法保持可用。刷新不会重建表格或清除列布局、选择状态。外部业务参数变化后，应在 React 提交后的 effect 中调用 reload，确保读取最新请求闭包。
 
 `pagination={false}` 隐藏分页控件；如果仍传入 `request`、`state.pagination`、`initialState.pagination` 或 `manualPagination`，分页模型依然启用。没有这些分页配置时使用连续列表。
 
@@ -53,7 +55,7 @@ data 模式支持十种 antd 内置单元格。通过 `meta.apex.editor` 选择�
 
 服务端分页示例只需列配置和 `request`，分页状态及请求生命周期由组件管理。跨页保留选择、筛选后清空选择等策略由业务决定。行操作示例单独演示行点击和菜单按钮；自定义交互区可添加 data-apex-interactive。
 
-`request` 模式自动在分页变化时显示加载态，并一起提交当前页和总数。使用外部请求自行管理 `data` 时，业务仍需在查询变化时传 `loading`，丢弃旧成功/失败，完成时一起提交 `data`、`rowCount`、`error`、`loading`。开关等待保存成功才更新值。
+`request` 模式自动在分页、服务端排序/筛选变化或主动刷新时显示加载态，并一起提交当前页和总数。使用外部请求自行管理 `data` 时，业务仍需在查询变化时传 `loading`，丢弃旧成功/失败，完成时一起提交 `data`、`rowCount`、`error`、`loading`。开关等待保存成功才更新值。
 
 ## v9 实际名称
 

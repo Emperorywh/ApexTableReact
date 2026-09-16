@@ -11,7 +11,7 @@
 ## 特性
 
 - **通过 props 接入**：组件管理表格实例和常用行模型，基础使用无需创建 TanStack 实例或额外导入 CSS。
-- **两种数据来源**：`data` 支持本地数据；`request` 自动管理服务端分页、加载、错误重试、请求取消和过期响应。
+- **两种数据来源**：`data` 支持本地数据；`request` 自动管理服务端分页、排序、筛选、主动刷新、加载、错误重试、请求取消和过期响应。
 - **排序与筛选**：支持本地排序、列筛选、全局筛选，以及由业务接管计算的 `manual` 选项。
 - **列布局与选择**：支持列显隐、宽度调整、起始侧与末尾侧固定、列设置面板调序、行选择和序号列。
 - **虚拟滚动**：按可视区域挂载数据行，支持固定行高、预渲染行数和三种密度。
@@ -107,28 +107,38 @@ export default function App() {
 
 ## 服务端分页
 
-将 `data` 替换为 `request`。组件在首次挂载、分页变化和错误重试时调用请求函数，自动维护当前页、总数和加载状态。
+将 `data` 替换为 `request`。组件在首次挂载、分页或服务端排序/筛选变化、主动刷新和错误重试时调用请求函数，自动维护当前页、总数和加载状态。
 
 以下示例沿用快速开始中的 `Item` 和 `columns`；`/api/items` 为业务接口占位地址，需要由你的服务提供。
 
 ```tsx
-import type { ApexTableRequestResult } from 'apex-table-react';
+import { useRef } from 'react';
+import type { ApexTableRef, ApexTableRequestResult } from 'apex-table-react';
 
 /*
  * 请求页码从零开始；若后端从一开始计数，请在接口参数中转换。
- * 返回当前页 data 和准确总行数 rowCount，并将取消信号传给 fetch。
+ * 服务端先筛选、排序再分页，返回当前页 data 和筛选后的 rowCount。
+ * 查询参数编码仅为示例，请根据实际接口约定映射字段。
  */
 export function RemoteTable() {
+  const ref = useRef<ApexTableRef>(null);
   return (
+    <>
+    <button onClick={() => ref.current?.reload()}>刷新当前页</button>
     <ApexTableReact
+      ref={ref}
       columns={columns}
       getRowId={(row) => row.id}
       height={420}
+      enableSorting
       initialState={{ pagination: { pageIndex: 0, pageSize: 20 } }}
-      request={async ({ pageIndex, pageSize, signal }) => {
+      request={async ({ pageIndex, pageSize, sorting, columnFilters, globalFilter, signal }) => {
         const query = new URLSearchParams({
           pageIndex: String(pageIndex),
           pageSize: String(pageSize),
+          sorting: JSON.stringify(sorting),
+          filters: JSON.stringify(columnFilters),
+          search: String(globalFilter ?? ''),
         });
         const response = await fetch(`/api/items?${query}`, { signal });
         if (!response.ok) throw new Error('加载商品列表失败');
@@ -136,15 +146,16 @@ export function RemoteTable() {
         return result;
       }}
     />
+    </>
   );
 }
 ```
 
 接口应返回 `{ data: Item[], rowCount: number }`，其中 `rowCount` 是非负整数。请求模式无需且不能同时传入 `data`、`rowCount`、`pageCount`、`manualPagination`、`loading`、`error` 或 `onRetry`。
 
-`request` 仅自动协调分页，不会自动将排序和筛选条件发送到后端。需要服务端搜索、排序、缓存或外部请求库时，可使用 `data`、`rowCount`、`manualPagination`、`manualSorting`、`manualFiltering`，并由业务管理请求及状态。
+`request` 默认自动协调服务端分页、排序和筛选。通过 `enableSorting` 开启表头排序，通过 `state.columnFilters/state.globalFilter` 及对应回调接入筛选；条件变化默认回到第一页，`autoResetPageIndex={false}` 可保留页码。显式设置 `manualSorting/manualFiltering={false}` 可沿用当前页本地计算。需要外部请求库或缓存时，仍可使用 `data` 和 manual 选项由业务管理请求。
 
-请求函数可以内联定义；仅改变函数引用不会重新请求。外部查询变化后的刷新策略见 [request API](./docs/api.md#request-服务端分页)。
+请求函数可以内联定义；仅改变函数引用不会重新请求。`ref.current?.reload()` 刷新当前页，`reload({ resetPageIndex: true })` 从第一页刷新，两者均保留排序、筛选、列布局和选择状态。外部参数变化后的刷新时机见 [request API](./docs/api.md#request-服务端分页)。
 
 ## 常用配置
 
@@ -168,7 +179,7 @@ export function RemoteTable() {
 - 需要受控状态时，将 `state` 中的切片与对应 `on…Change` 回调配对。回调接受 TanStack 原生 updater，可直接传 React 的状态 setter。
 - 同一状态同时出现在 `state` 与 `initialState` 中时，以 `state` 为准。
 - `tableRef` 可调用 `setPageIndex`、`setRowSelection`、`setColumnFilters` 等实例方法；界面同步使用受控状态或插槽订阅。
-- `ref` 提供 `focus()` 与 `scrollToRow(rowId)`；滚动定位仅针对当前结果，不会跨页请求。
+- `ref` 提供 `focus()`、`scrollToRow(rowId)` 与 `reload(options?)`；滚动定位仅针对当前结果，reload 仅在 request 模式刷新查询。
 
 完整属性与类型见 [API 文档](./docs/api.md)，使用示例见 [受控选择](./docs/demos/ControlledSelection.tsx) 和 [实例方法](./docs/demos/TableHook.tsx)。
 

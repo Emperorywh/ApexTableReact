@@ -13,7 +13,7 @@ nav:
 | --- | --- | --- |
 | columns | 必填 | 列定义数组，可从本包导入 ApexColumnDef&lt;Item&gt; 类型 |
 | data | 与 request 二选一 | 数据数组，更新数组引用即可刷新；默认行 ID 使用原生索引 |
-| request | 与 data 二选一 | 异步分页函数，接收 {pageIndex,pageSize,signal}，返回 Promise&lt;{data,rowCount}&gt;；自动管理服务端分页、加载、错误和重试 |
+| request | 与 data 二选一 | 异步查询函数，接收 {pageIndex,pageSize,sorting,columnFilters,globalFilter,signal}，返回 Promise&lt;{data,rowCount}&gt;；自动管理服务端分页、排序、筛选、加载、错误和重试 |
 | height | 100% | 像素或 CSS 高度，需要可测父容器 |
 | rowHeight | 随密度 | 有限数且 ≥32，覆盖密度 |
 | density/defaultDensity/onDensityChange | standard | 可受控的 Apex UI 状态 |
@@ -30,7 +30,7 @@ nav:
 | getPopupContainer | 随控件 | Apex 自有弹层在当前位置，antd 单元格弹层默认 document.body；可覆盖挂载容器 |
 | onDiagnostic | 无 | 几何、分页参数、身份、能力和受保护属性诊断 |
 
-ref 提供 focus() 与 scrollToRow(rowId):boolean。目标须在当前结果中，不存在时返回 false 并保持位置，不跨页请求。
+ref 提供 focus()、scrollToRow(rowId):boolean 和 reload(options?):void。滚动目标须在当前结果中，不存在时返回 false 并保持位置，不跨页请求。reload 仅在 request 模式发起查询，默认保留当前页；传入 {resetPageIndex:true} 回到第一页。data 和原生 table 模式下 reload 不执行操作，数据更新由业务负责。
 
 ## 数据与功能 props
 
@@ -45,7 +45,8 @@ ref 提供 focus() 与 scrollToRow(rowId):boolean。目标须在当前结果中�
 | onColumnOrderChange / onColumnVisibilityChange / onColumnSizingChange / onColumnPinningChange | 内部更新 | 受控列布局及偏好恢复 |
 | enableRowSelection | 随 showSelectionColumn | boolean 或行权限回调；enableMultiRowSelection 可控制多选 |
 | enableColumnResizing | 随 columnSettingsEnabled | 也可独立启用表头调宽；其他列权限沿用 enableHiding / enableColumnPinning |
-| manualPagination / manualSorting / manualFiltering | false；连续列表内部跳过分页 | 对应功能改由服务端处理，组件跳过该本地行模型 |
+| manualPagination / manualSorting / manualFiltering | data 模式 false；request 模式 true | 对应功能改由服务端处理，组件跳过该本地行模型；request 不允许覆盖 manualPagination |
+| autoResetPageIndex | request 模式 true | 服务端排序或筛选条件变化时回到第一页，false 保留当前页；若设置 autoResetAll，则优先使用它 |
 | rowCount / pageCount | 根据本地结果计算 | 服务端返回的总行数或页数 |
 | tableRef | 无 | Ref&lt;ApexTableInstance&lt;Item&gt;&gt;，提交后获得内部实例，卸载时清理 |
 | editable | false | 仅 data 模式，开启已配置内置编辑器的单元格；需要同时提供 onDataChange |
@@ -64,15 +65,23 @@ ref 提供 focus() 与 scrollToRow(rowId):boolean。目标须在当前结果中�
 
 详见下方请求入口说明；内置控件和受控编辑参见 [单元格编辑](/editing)。
 
-`request({ pageIndex, pageSize, signal })` 返回 `Promise<{ data, rowCount }>`：`pageIndex` 从 0 开始，`pageSize` 默认 10；`data` 是当前页数组，`rowCount` 是非负整数的准确总行数。可通过 `initialState.pagination` 配置初始页码和每页条数，通过 `pagination.pageSizeOptions` 配置选项。
+`request({ pageIndex, pageSize, sorting, columnFilters, globalFilter, signal })` 返回 `Promise<{ data, rowCount }>`：`pageIndex` 从 0 开始，`pageSize` 默认 10；`data` 是当前页数组，`rowCount` 是筛选后的非负整数总行数。可通过 `initialState.pagination` 配置初始页码和每页条数，通过 `pagination.pageSizeOptions` 配置选项。
 
-首次挂载、分页值变化和错误重试时自动请求。支持直接传内联函数，单独更换函数引用不会触发请求；下一次请求使用最新函数。如需因外部查询条件变化重新初始化，可改变组件的 React `key`，这也会重置组件内部状态。此接口仅自动处理分页，排序和筛选仍按原有 props 规则执行；已有复杂服务端查询可继续使用 `data` 和 manual 选项自行管理。
+首次挂载、分页或服务端排序/筛选条件变化、主动刷新和错误重试时自动请求。支持直接传内联函数，单独更换函数引用不会触发请求；下一次请求使用最新已提交的函数。相同排序项、相同列筛选项不会因为数组引用变化重复请求；筛选项的 value 和 globalFilter 按 Object.is 比较，复杂对象应保留稳定引用并以不可变方式更新。
+
+排序传入 `SortingState`（`{id,desc}[]`），顺序表示多列排序优先级；列筛选传入 `ColumnFiltersState`（`{id,value}[]`），全局筛选为 `unknown`，其具体含义由业务接口定义。组件不负责拼接 URL 或限制后端查询格式。服务端应先筛选、排序，再分页；返回结果默认不会被客户端再次筛选或排序。表头排序仍需 `enableSorting`，多列排序需 `enableMultiSort`；筛选输入控件由业务提供。
+
+上述切片均支持 `initialState`、`state` 与对应 `onSortingChange/onColumnFiltersChange/onGlobalFilterChange` 回调，也支持 `tableRef` 的 `setSorting/setColumnFilters/setGlobalFilter`。服务端条件变化默认回到第一页；`autoResetPageIndex={false}` 可保留当前页。受控分页的重置会通过 `onPaginationChange` 通知，父组件应接收该更新；最终页码仍以传回的 `state.pagination` 为准。响应数据变化本身不会重置分页，避免重复请求。
+
+`ref.current?.reload()` 刷新当前查询；`ref.current?.reload({ resetPageIndex: true })` 从第一页刷新。类型为 `ApexTableRef`（别名 `ApexTableReactRef`），选项类型为 `ApexTableReloadOptions`。刷新保留排序、筛选、列布局和选择状态，不需要修改 React `key`；返回 void，请求结果或错误通过表格界面与插槽展示。外部业务参数更新提交后可在 effect 中调用 reload，以使用最新请求闭包；搜索条件优先接入上述受控筛选切片。
+
+请求模式默认 `manualSorting/manualFiltering=true`。若需要沿用当前页本地计算，可显式设置对应选项为 false：本地排序变化不触发请求，传给 request 的 sorting 为 []；本地筛选变化不触发请求，传给 request 的 columnFilters 为 []、globalFilter 为 undefined。已有外部请求库或缓存管理仍可使用 data 和 manual 选项自行管理。
 
 请求模式无需且不允许传入 `data`、`rowCount`、`pageCount`、`manualPagination`、`loading`、`error`、`onRetry`，分页状态和 `onPaginationChange` 也无需手动维护。需要受控分页时仍支持 `state.pagination` 配合 `onPaginationChange`。原生 `tableRef` 分页 setter 会触发相同的请求流程。
 
 切页立即隐藏旧数据和旧总数；新查询或卸载时中止旧 `signal`，接口忽略取消信号时仍丢弃旧成功和失败结果。异常自动进入错误界面，默认重试按钮重新请求当前页，`slots.error` 可获取错误详情。使用 `fetch` 时应自行检查 `response.ok` 并抛出异常。非法分页不会调用接口；不符合结果结构的数据进入错误界面。
 
-请求相关类型均从本包导出：`ApexTableRequest<Item>`、`ApexTableRequestParams`、`ApexTableRequestResult<Item>`、`ApexTableReactRequestProps<Item>`。`ApexTableReactDataProps<Item>` 同时包含本地数据和请求模式。
+请求相关类型均从本包导出：`ApexTableRequest<Item>`、`ApexTableRequestParams`、`ApexTableRequestResult<Item>`、`ApexTableReactRequestProps<Item>`、`ApexTableReloadOptions`。`ApexTableReactDataProps<Item>` 同时包含本地数据和请求模式。
 
 ### 原有实例入口兼容
 
@@ -80,7 +89,7 @@ ref 提供 focus() 与 scrollToRow(rowId):boolean。目标须在当前结果中�
 
 非法 pageIndex/pageSize 使用 invalidPagination 诊断；修正原生状态后恢复显示。诊断不隐式改写切片，不调用业务请求重试。
 
-columnDef.meta.apex 支持 align(start/center/end)、flex、pinPriority、canReorder、label 和 editor。使用原生 columnMeta 类型槽时，将业务类型与 {apex?:ApexColumnMeta<Item>} 交叉；editor 的配置见 [单元格编辑](/editing)。
+columnDef.meta.apex 支持 align(start/center/end)、flex、pinPriority、canReorder、label 和 editor。使用原生 columnMeta 类型槽时，将业务类型与 `{apex?:ApexColumnMeta<Item>}` 交叉；editor 的配置见 [单元格编辑](/editing)。
 
 列配置通过行号列表头的齿轮打开原生模态弹窗；显式传 `showRowNumber={false}` 时使用工具栏入口。拖动序号可调整同一固定区域内的顺序，不能跨越 `canReorder: false` 的锁定列；“固定位置”下拉框提供取消固定、固定在左侧、固定在右侧三个选项。键盘聚焦序号后按空格开始拖动、上下方向键移动、空格放下、Esc 取消拖动。非拖动状态下 Esc 取消弹窗，在输入框内按 Enter 确认（输入法组合期间除外）。
 

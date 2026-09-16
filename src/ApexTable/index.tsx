@@ -218,13 +218,17 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
     if (!virtual && rows.length > 1000) report(diagnostic('virtualizationDisabled', locale.virtualizationDisabled));
     if (hasProtectedProps(slotProps)) report(diagnostic('protectedProp', locale.protectedProp));
   }, [errorCode, virtual, rows.length, props.onDiagnostic, locale, slotProps]);
-  useImperativeHandle(imperativeRef, () => ({ focus: () => focusWithoutScroll(root.current), scrollToRow: (rowId) => {
+  /*
+   * 刷新入口沿用组件引用，保留聚焦与滚动方法；本地和原生实例模式不发起请求。
+   * 请求回调随当前入口更新，切换模式后不会调用已卸载请求组件的状态更新器。
+   */
+  useImperativeHandle(imperativeRef, () => ({ reload: (options) => props.requestReload?.(options), focus: () => focusWithoutScroll(root.current), scrollToRow: (rowId) => {
     if (!canRender) return false;
     const index = rows.findIndex((row) => row.id === rowId);
     if (index < 0 || !viewport.current) return false;
     viewport.current.scrollTop = index * safeHeight;
     return true;
-  } }), [rows, safeHeight, canRender]);
+  } }), [rows, safeHeight, canRender, props.requestReload]);
   const setDensity = (next: ApexDensity) => { if (props.density === undefined) setInternalDensity(next); props.onDensityChange?.(next); };
   const toolbarProps = mergeDOM<ApexRootDOM>({ className: 'apex-table-toolbar' }, slotProps.toolbar?.rootProps);
   /*
@@ -301,7 +305,7 @@ const managedOptionDefaults = {
  * 请求结果进入此组件前已转换为普通数据 props，原生实例无需感知异步请求。
  * 本地与外部手动分页仍直接使用原来的选项管理路径。
  */
-function ManagedTable({ props, imperativeRef }: { props: ApexTableReactLocalProps<RowData>; imperativeRef: ForwardedRef<ApexTableRef> }) {
+function ManagedTable({ props, imperativeRef, requestReload }: { props: ApexTableReactLocalProps<RowData>; imperativeRef: ForwardedRef<ApexTableRef>; requestReload?: ApexTableRef['reload'] }) {
   const { tableRef, editable, onDataChange, ...options } = props;
   const editing = useEditing({ ...props, editable, onDataChange });
   const paginationEnabled = !!props.pagination || !!props.manualPagination || !!props.state?.pagination || !!props.initialState?.pagination;
@@ -345,7 +349,7 @@ function ManagedTable({ props, imperativeRef }: { props: ApexTableReactLocalProp
    * 页面通过原生 setter 控制表格，原有 ref 仍专门负责聚焦和滚动。
    */
   useImperativeHandle(tableRef, () => table, [table]);
-  return <EditingContext.Provider value={editing}><NativeTable props={{ ...props, table, paginationEnabled, selectionEnabled } as unknown as RuntimeProps} imperativeRef={imperativeRef} /></EditingContext.Provider>;
+  return <EditingContext.Provider value={editing}><NativeTable props={{ ...props, table, paginationEnabled, selectionEnabled, requestReload } as unknown as RuntimeProps} imperativeRef={imperativeRef} /></EditingContext.Provider>;
 }
 
 /*
@@ -353,12 +357,12 @@ function ManagedTable({ props, imperativeRef }: { props: ApexTableReactLocalProp
  * 独立边界确保卸载或切回本地数据时清理在途请求。
  */
 function RequestTable({ props, imperativeRef }: { props: ApexTableReactRequestProps<RowData>; imperativeRef: ForwardedRef<ApexTableRef> }) {
-  const dataProps = useRequestProps(props);
+  const { dataProps, reload } = useRequestProps(props);
   /*
    * 自动请求结果没有业务侧数据回写通道，运行时同样禁止编辑。
    * 需要远程保存时由业务使用 data 模式管理加载和提交。
    */
-  return <ManagedTable props={{ ...dataProps, editable: false, onDataChange: undefined }} imperativeRef={imperativeRef} />;
+  return <ManagedTable props={{ ...dataProps, editable: false, onDataChange: undefined }} imperativeRef={imperativeRef} requestReload={reload} />;
 }
 
 /*

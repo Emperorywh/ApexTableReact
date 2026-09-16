@@ -42,9 +42,15 @@ export type ApexDensity = 'compact' | 'standard' | 'comfortable';
  */
 export type ApexTableStyle = CSSProperties & { [K in `--apex-table-${string}`]?: string | number };
 export type ApexTrack = boolean | { size?: number; sticky?: false | 'start' | 'end' };
+/*
+ * 主动刷新默认保留当前页、排序和筛选，可显式要求从第一页重新查询。
+ * 此选项只作用于 request 模式，其他数据入口的刷新由调用方管理。
+ */
+export interface ApexTableReloadOptions { resetPageIndex?: boolean }
 export interface ApexTableRef {
   focus(): void;
   scrollToRow(rowId: string): boolean;
+  reload(options?: ApexTableReloadOptions): void;
 }
 export type ApexDiagnosticCode = 'invalidGeometry' | 'invalidPagination' | 'duplicateRowId' | 'duplicateColumnId' | 'unmeasurable' | 'unsupportedLayout' | 'virtualizationDisabled' | 'protectedProp';
 export interface ApexDiagnostic { code: ApexDiagnosticCode; message: string }
@@ -224,9 +230,10 @@ type ApexTableReactBaseProps<D extends RowData> = Omit<ApexTableProps<ApexTableF
 };
 /*
  * 请求模式沿用从零开始的原生页码，取消信号可直接传给 fetch。
- * 接口一次返回当前页和准确总数，组件统一管理请求生命周期。
+ * 排序和筛选使用原生状态结构，服务端应先查询完整结果再分页。
+ * 显式使用本地排序或筛选时，对应请求条件为空，不重复要求服务端处理。
  */
-export type ApexTableRequestParams = PaginationState & { signal: AbortSignal };
+export type ApexTableRequestParams = PaginationState & Pick<ApexTableState, 'sorting' | 'columnFilters'> & { globalFilter: unknown; signal: AbortSignal };
 export interface ApexTableRequestResult<D extends RowData> { data: D[]; rowCount: number }
 export type ApexTableRequest<D extends RowData> = (params: ApexTableRequestParams) => Promise<ApexTableRequestResult<D>>;
 export type ApexTableReactRequestProps<D extends RowData> = Omit<ApexTableReactBaseProps<D>, 'rowCount' | 'pageCount' | 'manualPagination' | 'loading' | 'error' | 'onRetry'> & {

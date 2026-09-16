@@ -1,5 +1,5 @@
 # 变更记录
-## 未发布
+## 0.1.0-rc.0（2026-09-16）
 
 - 新增 `ref.reload()` 与 `reload({ resetPageIndex: true })`，主动刷新保留列布局、排序、筛选及选择状态。`request` 新增 sorting、columnFilters、globalFilter 参数，条件变化自动请求并默认回到第一页，支持受控状态及原生实例 setter。
 - 请求模式的 `manualSorting/manualFiltering` 默认值改为 true，由服务端处理完整查询；原有当前页本地排序/筛选可显式设置为 false。`autoResetPageIndex={false}` 保留条件变化前的页码，响应数据更新本身不再触发分页重置。

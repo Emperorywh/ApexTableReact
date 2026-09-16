@@ -6,7 +6,7 @@
 
 [使用指南](./docs/guide.md) · [API 文档](./docs/api.md) · [主题与扩展](./docs/customization.md) · [示例源码](./docs/demos) · [更新记录](./CHANGELOG.md)
 
-> 当前仓库版本为 `0.1.0-rc.0`，处于预发布阶段，尚未完成正式发布验收。目前 npm 公共仓库尚无此包，可按下文从源码构建并安装。
+> 当前版本为 `0.1.0-rc.0`，处于预发布阶段，尚未完成正式发布验收。npm 候选版本使用 `rc` 标签。
 
 ## 特性
 
@@ -31,6 +31,14 @@
 | 浏览器 | 支持 `ResizeObserver`、`AbortController` 等现代 Web API |
 
 React 和 React DOM 由消费项目提供；TanStack 依赖随组件包安装，基础接入不需要自行注册特性。
+
+### 从 npm 官方源安装当前候选版本
+
+```sh
+# 指定当前候选版本，从 npm 官方源安装。
+# React 和 React DOM 由业务项目提供。
+npm install apex-table-react@0.1.0-rc.0 --registry=https://registry.npmjs.org/
+```
 
 ### 从源码安装当前候选版本
 

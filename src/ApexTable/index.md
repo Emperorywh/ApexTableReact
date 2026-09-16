@@ -162,3 +162,15 @@ group:
 data 模式通过 `editable` 和 `onDataChange` 开启编辑，列的 `meta.apex.editor` 选择 antd 控件。示例包含十种组件，支持排序、分页、虚拟滚动、只读切换和获取全部数据。Image 只展示缩略图并支持预览，图片更新由业务通过 data 接入；ColorPicker 默认只展示可点击选择颜色的色块。
 
 <code src="../../docs/demos/EditableCells.tsx"></code>
+
+### 25. 行展开
+
+通过 `expandable.expandedRowRender` 渲染详情，`rowExpandable` 控制哪些记录可以展开。展开键使用 `getRowId` 返回的字符串；普通行保持固定高度，详情按内容自动撑高。
+
+<code src="../../docs/demos/Expandable.tsx"></code>
+
+### 26. 受控展开与虚拟滚动
+
+`expandedRowKeys` 配合 `onExpandedRowsChange` 控制展开；点击行的非交互区域也可切换。尝试切换详情长度、翻页、排序与定位，展开状态独立于行选择，详情不计入分页条数。
+
+<code src="../../docs/demos/ControlledExpandable.tsx"></code>

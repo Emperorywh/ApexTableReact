@@ -43,6 +43,24 @@ export type ApexDensity = 'compact' | 'standard' | 'comfortable';
 export type ApexTableStyle = CSSProperties & { [K in `--apex-table-${string}`]?: string | number };
 export type ApexTrack = boolean | { size?: number; sticky?: false | 'start' | 'end' };
 /*
+ * 行详情使用原始记录，展开身份统一采用 getRowId 生成的字符串 ID。
+ * 受控与默认展开相互独立，不占用原生树形数据的 expanded 状态。
+ */
+export interface ApexExpandable<D> {
+  expandedRowRender(record: D, index: number, indent: number, expanded: boolean): ReactNode;
+  rowExpandable?(record: D): boolean;
+  expandedRowKeys?: readonly string[];
+  defaultExpandedRowKeys?: readonly string[];
+  defaultExpandAllRows?: boolean;
+  onExpand?(expanded: boolean, record: D): void;
+  onExpandedRowsChange?(expandedKeys: string[]): void;
+  expandRowByClick?: boolean;
+  showExpandColumn?: boolean;
+  columnWidth?: number;
+  columnTitle?: ReactNode;
+  fixed?: boolean | 'left' | 'right';
+}
+/*
  * 主动刷新默认保留当前页、排序和筛选，可显式要求从第一页重新查询。
  * 此选项只作用于 request 模式，其他数据入口的刷新由调用方管理。
  */
@@ -83,6 +101,13 @@ export interface ApexLocale {
   selectPage: string;
   selectResults: string;
   rowNumber: string;
+  /*
+   * 展开入口的可访问名称支持业务本地化。
+   * 表头与按钮分别命名，读屏可区分展开和收起动作。
+   */
+  expansion: string;
+  expandRow: string;
+  collapseRow: string;
   previousPage: string;
   nextPage: string;
   pageSize: string;
@@ -189,6 +214,11 @@ export interface ApexTableProps<F extends TableFeatures, D extends RowData, S = 
   onDensityChange?(value: ApexDensity): void;
   virtualization?: 'auto' | boolean | { overscan?: number };
   showSelectionColumn?: ApexTrack;
+  /*
+   * 所有数据入口共用行详情配置，回调参数保留业务记录类型。
+   * 详情高度独立测量，不改变普通数据行的固定行高。
+   */
+  expandable?: ApexExpandable<D>;
   /*
    * 启用列设置时默认展示序号列，并在表头显示齿轮入口。
    * 传 false 可关闭序号列，传对象可配置列宽和固定位置。

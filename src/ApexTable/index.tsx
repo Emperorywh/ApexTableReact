@@ -27,6 +27,12 @@ import { ColumnSettings } from '../components/column-settings';
  */
 import { BuiltinCell, EditorTheme } from '../editors/cell';
 import { EditingContext, useEditing } from '../internal/editing';
+/*
+ * 行详情独立管理展示状态，原生行模型继续只包含业务记录。
+ * 展开后的详情与数据行共同参与虚拟窗口测量。
+ */
+import { useExpansion } from '../internal/expansion';
+import type { BodyEntry } from '../internal/expansion';
 
 /*
  * 渲染层接收原生实例，仅订阅影响模型和列布局的切片。
@@ -77,22 +83,45 @@ function HeaderCell({ table, track, header, index, tableId }: { table: RuntimeTa
     <ResizeHandle table={table} column={column} renderedSize={track.size} />
   </th>;
 }
-const DataRow = memo(function DataRow({ table, row, index, offset, tracks, tableId, onRowClick }: { table: RuntimeTable; row: RuntimeRow; index: number; offset: number; tracks: Track[]; tableId: string; onRowClick: RuntimeProps['onRowClick'] }) {
-  const { root } = useUI();
+/*
+ * 展开按钮通过原生 button 支持回车和空格，交互控件不会触发行点击展开。
+ * 展示索引包含详情行，业务序号仍使用分页内的数据索引。
+ */
+const DataRow = memo(function DataRow({ table, row, index, offset, tracks, tableId, onRowClick, bodyIndex, ariaIndex, canExpand, expanded, expandRowByClick, toggle, measure }: { table: RuntimeTable; row: RuntimeRow; index: number; offset: number; tracks: Track[]; tableId: string; onRowClick: RuntimeProps['onRowClick']; bodyIndex: number; ariaIndex: number; canExpand: boolean; expanded: boolean; expandRowByClick?: boolean; toggle(row: RuntimeRow): void; measure?: (node: HTMLTableRowElement | null) => void }) {
+  const { root, locale } = useUI();
   const node = useRef<HTMLTableRowElement>(null);
+  const rowRef = useCallback((element: HTMLTableRowElement | null) => { node.current = element; measure?.(element); }, [measure]);
   useLayoutEffect(() => () => {
     if (node.current?.contains(document.activeElement) && root.current?.isConnected) focusWithoutScroll(root.current);
   }, [root]);
   const nativeCells = row.getAllCells();
   const cells = useMemo(() => new Map(nativeCells.map((cell) => [cell.column.id, cell])), [nativeCells]);
   const children = tracks.map((track, colIndex) => <td role="cell" key={`${track.kind}:${track.key}`} headers={`${tableId}-col-${colIndex}`} aria-colindex={colIndex + 1} className="apex-table-cell" data-column-id={track.kind === 'column' ? track.key : undefined} data-apex-track={track.kind} data-pinned={track.sticky || undefined} data-align={track.column?.columnDef.meta?.apex?.align} style={trackStyle(track)}>
-    {track.kind === 'selection' ? <RowCheckbox table={table} row={row} /> : track.kind === 'number' ? offset + index + 1 : cells.has(track.key) ? <CellContent table={table} cell={cells.get(track.key)!} /> : null}
+    {track.kind === 'expansion' ? canExpand && <button type="button" className="apex-table-expand-button" aria-label={expanded ? locale.collapseRow : locale.expandRow} aria-expanded={expanded} aria-controls={expanded ? `${tableId}-detail-${encodeURIComponent(row.id)}` : undefined} onClick={(event) => { event.stopPropagation(); toggle(row); }}><span aria-hidden="true">{expanded ? '−' : '+'}</span></button> : track.kind === 'selection' ? <RowCheckbox table={table} row={row} /> : track.kind === 'number' ? offset + index + 1 : cells.has(track.key) ? <CellContent table={table} cell={cells.get(track.key)!} /> : null}
   </td>);
-  const render = (selected: boolean) => <tr ref={node} role="row" aria-rowindex={offset + index + 2} className="apex-table-row" data-row-id={row.id} data-selected={selected || undefined} onClick={(event) => {
-    if (!event.defaultPrevented && !isInteractive(event.target) && !window.getSelection()?.toString()) onRowClick?.(row, event);
+  const render = (selected: boolean) => <tr ref={rowRef} role="row" aria-rowindex={ariaIndex} className="apex-table-row" data-row-id={row.id} data-index={bodyIndex} data-selected={selected || undefined} data-expanded={expanded || undefined} onClick={(event) => {
+    if (event.defaultPrevented || isInteractive(event.target) || window.getSelection()?.toString()) return;
+    onRowClick?.(row, event);
+    if (!event.defaultPrevented && expandRowByClick && canExpand) toggle(row);
   }}>{children}</tr>;
   return table.atoms.rowSelection ? <table.Subscribe source={table.atoms.rowSelection} selector={(state) => !!state[row.id]}>{render}</table.Subscribe> : render(false);
-}, (a, b) => a.row === b.row && a.index === b.index && a.offset === b.offset && a.tracks === b.tracks && a.tableId === b.tableId && a.table === b.table && a.onRowClick === b.onRowClick);
+});
+
+/*
+ * 详情使用单个跨列单元格，允许多行文字、嵌套组件及异步内容自然撑高。
+ * ResizeObserver 由虚拟器维护；详情卸载时将内部焦点归还表格根节点。
+ */
+function ExpandedRow({ entry, bodyIndex, columns, tableId, render, measure }: { entry: BodyEntry; bodyIndex: number; columns: number; tableId: string; render: NonNullable<RuntimeProps['expandable']>['expandedRowRender']; measure?: (node: HTMLTableRowElement | null) => void }) {
+  const { root } = useUI();
+  const node = useRef<HTMLTableRowElement>(null);
+  const rowRef = useCallback((element: HTMLTableRowElement | null) => { node.current = element; measure?.(element); }, [measure]);
+  useLayoutEffect(() => () => {
+    if (node.current?.contains(document.activeElement) && root.current?.isConnected) focusWithoutScroll(root.current);
+  }, [root]);
+  return <tr ref={rowRef} role="row" aria-rowindex={bodyIndex + 2} id={`${tableId}-detail-${encodeURIComponent(entry.row.id)}`} className="apex-table-expanded-row" data-index={bodyIndex}>
+    <td role="cell" colSpan={columns} aria-colspan={columns} className="apex-table-expanded-cell">{render(entry.row.original, entry.index, 0, true)}</td>
+  </tr>;
+}
 
 function BodyState({ props, error, filtered, rows, height }: { props: RuntimeProps; error?: ApexDiagnostic; filtered: boolean; rows: number; height: number }) {
   const { slots, slotProps, locale } = useUI();
@@ -138,6 +167,8 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
   const ui = useMemo(() => ({ root, viewport, locale, slots, slotProps, closeSignal, getPopupContainer: props.getPopupContainer, paginationEnabled: hasPagination, selectionEnabled: hasSelection }), [locale, slots, slotProps, closeSignal, props.getPopupContainer, hasPagination, hasSelection]);
   const rowModel = table.getRowModel();
   const rows = rowModel.rows;
+  const coreRows = table.getCoreRowModel().rows;
+  const { entries, toggle } = useExpansion(props.expandable, coreRows, rows);
   const rawOverscan = typeof props.virtualization === 'object' ? props.virtualization.overscan ?? 8 : 8;
   const validOverscan = Number.isInteger(rawOverscan) && rawOverscan >= 0;
   const overscan = validOverscan ? rawOverscan : 8;
@@ -147,9 +178,15 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
    * 显式关闭序号列或自定义其宽度、固定位置时，仍尊重调用方配置。
    */
   const showRowNumber = props.showRowNumber ?? !!props.columnSettingsEnabled;
-  const tracks = useMemo(() => calculateLayout(table, dimensions.width, props.showSelectionColumn ?? false, showRowNumber), [table.store, table.options.columns, table.options.defaultColumn, model.columnOrder, model.columnVisibility, model.columnSizing, model.columnPinning, dimensions.width, props.showSelectionColumn, showRowNumber]);
+  /*
+   * 展开列复用辅助列布局，固定列偏移自动包含新增宽度。
+   * 列配置只依赖几何字段，展开状态变化不重建普通单元格布局。
+   */
+  const showExpansion = !!props.expandable?.expandedRowRender && props.expandable.showExpandColumn !== false;
+  const expansionWidth = props.expandable?.columnWidth;
+  const expansionFixed = props.expandable?.fixed;
+  const tracks = useMemo(() => calculateLayout(table, dimensions.width, props.showSelectionColumn ?? false, showRowNumber, showExpansion ? { size: expansionWidth, sticky: expansionFixed === 'right' ? 'end' : expansionFixed ? 'start' : false } : false), [table.store, table.options.columns, table.options.defaultColumn, model.columnOrder, model.columnVisibility, model.columnSizing, model.columnPinning, dimensions.width, props.showSelectionColumn, showRowNumber, showExpansion, expansionWidth, expansionFixed]);
   const width = tracks.reduce((sum, track) => sum + track.size, 0);
-  const coreRows = table.getCoreRowModel().rows;
   const identityError = useMemo(() => {
     const ids = new Set<string>();
     if (coreRows.some((row) => !row.id || ids.size === ids.add(row.id).size)) return 'duplicateRowId';
@@ -175,17 +212,31 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
   const hasColumns = tracks.some((track) => track.kind === 'column');
   const filtered = !!model.columnFilters?.length || ((model.globalFilter !== null && model.globalFilter !== undefined) && model.globalFilter !== '' && model.globalFilter !== false);
   const canRender = !unavailable && hasColumns && dimensions.width > 0 && dimensions.height > 0;
-  const virtualizer = useVirtualizer({ count: canRender && virtual ? rows.length : 0, getScrollElement: () => viewport.current, estimateSize: () => safeHeight, getItemKey: (index) => rows[index]?.id ?? index, overscan, scrollMargin: 44, enabled: canRender && virtual });
+  /*
+   * 每条展开详情作为独立虚拟项测量，分页条数仍只统计数据记录。
+   * 表头高度同时用作滚动边距，定位行时避免目标被固定表头遮住。
+   */
+  const getItemKey = useCallback((index: number) => entries[index]?.key ?? index, [entries]);
+  const virtualizer = useVirtualizer({ count: canRender && virtual ? entries.length : 0, getScrollElement: () => viewport.current, estimateSize: () => safeHeight, getItemKey, overscan, scrollMargin: 44, scrollPaddingStart: 44, enabled: canRender && virtual });
   const items = virtualizer.getVirtualItems();
   /*
    * 隐藏后恢复时，虚拟窗口可能晚于容器尺寸重新建立。
    * 等占位轨道已经挂载再恢复锚点，避免滚动目标被临时空表体钳制为零。
    */
   const anchorReady = canRender && (!virtual || items.length > 0);
-  const range = virtual ? items.map((item) => item.index) : canRender ? rows.map((_, index) => index) : [];
+  const range = virtual ? items.map((item) => item.index) : canRender ? entries.map((_, index) => index) : [];
   const top = items.length ? Math.max(0, items[0].start - 44) : 0;
   const bottom = items.length ? Math.max(0, virtualizer.getTotalSize() - (items[items.length - 1].end - 44)) : 0;
-  const anchor = useRef<{ id?: string; index: number; offset: number }>({ index: 0, offset: 0 });
+  const anchor = useRef<{ id?: string; rowId?: string; index: number; offset: number }>({ index: 0, offset: 0 });
+  /*
+   * 普通渲染读取真实行位置，虚拟渲染使用已测量的偏移。
+   * 同一定位路径服务于锚点恢复和公开 scrollToRow，避免按固定行高猜测详情位置。
+   */
+  const getEntryOffset = useCallback((index: number) => {
+    if (virtual) return virtualizer.getOffsetForIndex(index, 'start')?.[0] ?? 0;
+    const element = viewport.current?.querySelector<HTMLTableRowElement>(`:scope > .apex-table-grid > .apex-table-body > tr[data-index="${index}"]`);
+    return element && viewport.current ? element.getBoundingClientRect().top - viewport.current.getBoundingClientRect().top + viewport.current.scrollTop - 44 : 0;
+  }, [virtual, virtualizer]);
   const previousQuery = useRef({ source: table.store, sorting: model.sorting, filters: model.columnFilters, global: model.globalFilter, page: model.pagination });
   useLayoutEffect(() => {
     const element = viewport.current;
@@ -204,13 +255,21 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
     if (!viewport.current) return;
     if (changed) { viewport.current.scrollTop = 0; anchor.current = { index: 0, offset: 0 }; }
     else if (anchorReady) {
-      const match = anchor.current.id ? rows.findIndex((row) => row.id === anchor.current.id) : anchor.current.index;
-      const index = Math.max(0, Math.min(rows.length - 1, match < 0 ? anchor.current.index : match));
-      viewport.current.scrollTop = index * safeHeight + Math.min(anchor.current.offset, safeHeight - 1);
+      const match = anchor.current.id ? entries.findIndex((entry) => entry.key === anchor.current.id) : anchor.current.index;
+      const fallback = entries.findIndex((entry) => !entry.detail && entry.row.id === anchor.current.rowId);
+      const index = Math.max(0, Math.min(entries.length - 1, match < 0 ? fallback < 0 ? anchor.current.index : fallback : match));
+      viewport.current.scrollTop = getEntryOffset(index) + (match >= 0 && entries[index]?.detail ? anchor.current.offset : Math.min(anchor.current.offset, safeHeight - 1));
     }
     viewport.current.scrollLeft = Math.min(viewport.current.scrollLeft, Math.max(0, width - viewport.current.clientWidth));
-  }, [rows, safeHeight, model.sorting, model.columnFilters, model.globalFilter, model.pagination, table.store, canRender, anchorReady, width]);
-  useLayoutEffect(() => { virtualizer.measure(); }, [safeHeight, virtualizer]);
+  }, [entries, safeHeight, model.sorting, model.columnFilters, model.globalFilter, model.pagination, table.store, canRender, anchorReady, width, getEntryOffset]);
+  /*
+   * 密度变化清空旧尺寸后立即补测已挂载项，保留详情的实际高度。
+   * 查询限定当前表体，避免将详情里的嵌套表格错误注册到外层虚拟器。
+   */
+  useLayoutEffect(() => {
+    virtualizer.measure();
+    if (virtual) viewport.current?.querySelectorAll<HTMLTableRowElement>(':scope > .apex-table-grid > .apex-table-body > tr[data-index]').forEach((element) => virtualizer.measureElement(element));
+  }, [safeHeight, virtual, virtualizer]);
   useEffect(() => { closeSettings(); }, [table.store, closeSettings]);
   useEffect(() => {
     const report = props.onDiagnostic ?? ((event: ApexDiagnostic) => console.warn(`ApexTableReact: ${event.message}`));
@@ -224,11 +283,12 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
    */
   useImperativeHandle(imperativeRef, () => ({ reload: (options) => props.requestReload?.(options), focus: () => focusWithoutScroll(root.current), scrollToRow: (rowId) => {
     if (!canRender) return false;
-    const index = rows.findIndex((row) => row.id === rowId);
+    const index = entries.findIndex((entry) => !entry.detail && entry.row.id === rowId);
     if (index < 0 || !viewport.current) return false;
-    viewport.current.scrollTop = index * safeHeight;
+    if (virtual) virtualizer.scrollToIndex(index, { align: 'start' });
+    else viewport.current.scrollTop = getEntryOffset(index);
     return true;
-  } }), [rows, safeHeight, canRender, props.requestReload]);
+  } }), [entries, virtual, virtualizer, getEntryOffset, canRender, props.requestReload]);
   const setDensity = (next: ApexDensity) => { if (props.density === undefined) setInternalDensity(next); props.onDensityChange?.(next); };
   const toolbarProps = mergeDOM<ApexRootDOM>({ className: 'apex-table-toolbar' }, slotProps.toolbar?.rootProps);
   /*
@@ -257,17 +317,28 @@ function Surface({ props, model, imperativeRef }: { props: RuntimeProps; model: 
          * 读取实时可见尺寸，并忽略虚拟轨道尚未恢复时的临时滚动事件。
          */
         if (!anchorReady || !event.currentTarget.clientWidth || event.currentTarget.clientHeight <= 44) return;
-        const index = Math.min(rows.length - 1, Math.max(0, Math.floor(event.currentTarget.scrollTop / safeHeight)));
-        anchor.current = { id: rows[index]?.id, index, offset: event.currentTarget.scrollTop % safeHeight };
+        /*
+         * 锚点可落在详情内部，记录实际高度偏移而非固定行高的余数。
+         * 非虚拟列表从已挂载的行寻找位置，避免展开后滚动定位逐行漂移。
+         */
+        const scrollTop = event.currentTarget.scrollTop;
+        const item = virtual ? virtualizer.getVirtualItemForOffset(scrollTop + 44) : undefined;
+        const bodyRows = virtual ? [] : Array.from(event.currentTarget.querySelectorAll<HTMLTableRowElement>(':scope > .apex-table-grid > .apex-table-body > tr[data-index]'));
+        const visible = bodyRows.find((element) => element.getBoundingClientRect().bottom > event.currentTarget.getBoundingClientRect().top + 44);
+        const index = item?.index ?? (visible ? Number(visible.dataset.index) : 0);
+        anchor.current = { id: entries[index]?.key, rowId: entries[index]?.row.id, index, offset: Math.max(0, scrollTop - (item ? item.start - 44 : getEntryOffset(index))) };
       }}>
-        <table role="table" aria-label={props.name ?? locale.tableName} aria-rowcount={totalRows === undefined ? -1 : totalRows + 1} aria-colcount={tracks.length} className="apex-table-grid" style={{ width: Math.max(width, dimensions.width) }}>
+        <table role="table" aria-label={props.name ?? locale.tableName} aria-rowcount={props.expandable ? entries.length + 1 : totalRows === undefined ? -1 : totalRows + 1} aria-colcount={tracks.length} className="apex-table-grid" style={{ width: Math.max(width, dimensions.width) }}>
           <thead role="rowgroup" className="apex-table-header"><tr role="row" aria-rowindex={1}>
-            {tracks.map((track, index) => track.kind === 'column' ? <HeaderCell key={`column:${track.key}`} table={table} track={track} index={index} tableId={tableId} header={headerMap.get(track.key)} /> : <th role="columnheader" scope="col" key={track.key} id={`${tableId}-col-${index}`} aria-colindex={index + 1} aria-label={track.kind === 'number' ? locale.rowNumber : undefined} className="apex-table-header-cell" data-pinned={track.sticky || undefined} style={trackStyle(track)}>{track.kind === 'selection' ? <HeaderCheckbox table={table} unavailable={unavailable} /> : settingsTrigger ?? locale.rowNumber}</th>)}
+            {tracks.map((track, index) => track.kind === 'column' ? <HeaderCell key={`column:${track.key}`} table={table} track={track} index={index} tableId={tableId} header={headerMap.get(track.key)} /> : <th role="columnheader" scope="col" key={track.key} id={`${tableId}-col-${index}`} aria-colindex={index + 1} aria-label={track.kind === 'number' ? locale.rowNumber : track.kind === 'expansion' ? locale.expansion : undefined} className="apex-table-header-cell" data-pinned={track.sticky || undefined} style={trackStyle(track)}>{track.kind === 'expansion' ? props.expandable?.columnTitle : track.kind === 'selection' ? <HeaderCheckbox table={table} unavailable={unavailable} /> : settingsTrigger ?? locale.rowNumber}</th>)}
           </tr></thead>
           <tbody role="rowgroup" className="apex-table-body">
             {canRender && rows.length > 0 && <>
               {top > 0 && <tr aria-hidden="true" role="presentation" className="apex-table-spacer" style={{ height: top }}><td /></tr>}
-              {range.map((index) => <DataRow key={rows[index].id} table={table} row={rows[index]} index={index} offset={nativeOffset} tracks={tracks} tableId={tableId} onRowClick={props.onRowClick} />)}
+              {range.map((index) => {
+                const entry = entries[index];
+                return entry.detail ? <ExpandedRow key={entry.key} entry={entry} bodyIndex={index} columns={tracks.length} tableId={tableId} render={props.expandable!.expandedRowRender} measure={virtual ? virtualizer.measureElement : undefined} /> : <DataRow key={entry.key} table={table} row={entry.row} index={entry.index} offset={nativeOffset} tracks={tracks} tableId={tableId} onRowClick={props.onRowClick} bodyIndex={index} ariaIndex={(props.expandable ? index : nativeOffset + entry.index) + 2} canExpand={entry.canExpand} expanded={entry.expanded} expandRowByClick={props.expandable?.expandRowByClick} toggle={toggle} measure={virtual ? virtualizer.measureElement : undefined} />;
+              })}
               {bottom > 0 && <tr aria-hidden="true" role="presentation" className="apex-table-spacer" style={{ height: bottom }}><td /></tr>}
             </>}
           </tbody>

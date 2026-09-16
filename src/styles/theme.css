@@ -50,6 +50,21 @@
 .apex-table-row[data-selected] { background: var(--apex-table-row-selected-bg);
   }
 
+/*
+ * 详情复用现有浅色背景与边框变量，品牌主题可继续统一覆盖。
+ * 加减按钮保持紧凑，键盘焦点与悬停沿用通用控件反馈。
+ */
+.apex-table-expanded-cell { padding: 12px var(--apex-table-padding-inline);
+  background: var(--apex-table-row-hover-bg);
+  border-bottom: 1px solid var(--apex-table-border-color);
+  }
+
+.apex-table .apex-table-expand-button { min-height: 0;
+  padding: 0;
+  border-radius: 3px;
+  line-height: 1;
+  }
+
 .apex-table-cell[data-pinned] { background: inherit;
   }
 

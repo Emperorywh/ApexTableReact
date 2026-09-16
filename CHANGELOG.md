@@ -1,6 +1,8 @@
 # 变更记录
 ## 0.1.0-rc.0（2026-09-16）
 
+- 新增 `expandable` 行展开配置与 `ApexExpandable` 类型，支持自定义详情、行权限、默认及受控展开、变更回调、行点击和展开列固定；详情自动测量高度，兼容虚拟滚动及行定位，补充基础与受控示例。
+
 - 新增 `ref.reload()` 与 `reload({ resetPageIndex: true })`，主动刷新保留列布局、排序、筛选及选择状态。`request` 新增 sorting、columnFilters、globalFilter 参数，条件变化自动请求并默认回到第一页，支持受控状态及原生实例 setter。
 - 请求模式的 `manualSorting/manualFiltering` 默认值改为 true，由服务端处理完整查询；原有当前页本地排序/筛选可显式设置为 false。`autoResetPageIndex={false}` 保留条件变化前的页码，响应数据更新本身不再触发分页重置。
 

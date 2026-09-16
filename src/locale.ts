@@ -16,6 +16,11 @@ export const zhCN: ApexLocale = {
   cancel: '取消', confirm: '确定', invalidColumnWidth: '请输入允许范围内的有效列宽', reorderBlocked: '只能在相同固定区域内排序，且不能跨越锁定列',
   dragColumn: '拖动排序', dragInstructions: '按空格开始拖动，使用上下方向键调整顺序，再按空格放下，按 Esc 取消拖动。',
   selectPage: '选择当前页可选行', selectResults: '选择全部筛选结果', rowNumber: '序号', previousPage: '上一页', nextPage: '下一页',
+  /*
+   * 行详情按钮使用明确的动作名称，支持键盘与读屏操作。
+   * 调用方可以通过 locale 单独覆盖这组文字。
+   */
+  expansion: '行展开', expandRow: '展开行', collapseRow: '收起行',
   pageSize: '每页数量', jumpToPage: '跳至', pageUnit: '页', pinStart: '固定在左侧', pinEnd: '固定在右侧', unpin: '取消固定',
   moveUp: '上移', moveDown: '下移', width: '列宽', showColumn: '显示列', minOneColumn: '至少保留一列业务信息', pinSpace: '固定列需为中间区域保留至少 160px',
   unknownTotal: '未提供准确总数，请替换或隐藏分页控件', unsupportedLayout: '此配置尚无完整界面支持：首版仅支持平铺单层表头',

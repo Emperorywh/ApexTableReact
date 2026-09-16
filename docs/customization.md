@@ -13,6 +13,8 @@ nav:
 
 稳定类名以 apex-table 开头，包含 header/body/row/cell/pagination/column-settings/empty/error/skeleton；行状态使用 data-selected/data-pinned，控件禁用使用原生 disabled，不依赖 nth-child。
 
+行展开提供 `apex-table-expand-button`、`apex-table-expanded-row` 和 `apex-table-expanded-cell` 类名；普通数据行展开时带有 `data-expanded`，展开辅助列使用 `data-apex-track="expansion"`。详情复用 `--apex-table-row-hover-bg`、`--apex-table-border-color` 和 `--apex-table-padding-inline`，结构样式允许内容自然撑高。
+
 ## 插槽 DOM 包
 
 | 插槽 | 转发目标 |

@@ -18,6 +18,7 @@ nav:
 | rowHeight | 随密度 | 有限数且 ≥32，覆盖密度 |
 | density/defaultDensity/onDensityChange | standard | 可受控的 Apex UI 状态 |
 | showSelectionColumn | false | true 或 {size,sticky}；默认 44px/start |
+| expandable | 无 | 行详情配置，支持受控展开、行权限和动态高度；详见下方行展开说明 |
 | showRowNumber | 随 columnSettingsEnabled | true 或 {size,sticky}；默认 48px/false；显式 false 隐藏行号列 |
 | columnSettingsEnabled | false | 弹窗配置显隐、宽度、固定位置、拖动排序和恢复默认；确认后应用，取消放弃草稿；入口默认位于行号列表头 |
 | pagination | 未配置时连续列表 | true 或 {pageSizeOptions} 启用分页；false 隐藏控件，页大小选项默认 10/20/50/100/200 |
@@ -60,6 +61,48 @@ ref 提供 focus()、scrollToRow(rowId):boolean 和 reload(options?):void。滚�
 `ApexTableReactDataProps<Item>` 描述 props 接入，`ApexColumnDef<Item>` 描述列，`ApexTableSlots<Item>` 描述插槽，`ApexTableState` 描述全部已封装的状态。`SortingState`、`ColumnFiltersState`、`PaginationState`、`RowSelectionState` 等常用类型均从本包导出。
 
 `tableRef` 提供 `setSorting`、`setColumnFilters`、`setPageIndex`、`setRowSelection`、`resetRowSelection`、`getAllLeafColumns` 等原生实例方法。方法更新受控切片时仍经过业务回调；业务界面应通过受控状态或插槽订阅更新。实例的 `state` 为 null，按需读取快照可用原生 `atoms.<slice>.get()`，无需导入或自行创建 atom。`ref` 的 `focus` 和 `scrollToRow` 能力保持独立。
+
+### 行展开
+
+通过 `expandable` 配置详情展示，适用于备注、订单明细或嵌套组件。`expandedRowRender` 和 `rowExpandable` 接收原始业务记录；列定义及数据入口仍使用本组件的 `columns` 和 `data/request/table`，不是 antd 的 `dataSource`。
+
+```tsx | pure
+/*
+ * 行 ID 同时用于展开、选择和滚动定位，应使用唯一稳定的字符串。
+ * 详情高度按内容测量，普通数据行仍沿用 rowHeight。
+ */
+<ApexTableReact
+  columns={columns}
+  data={data}
+  getRowId={(record) => String(record.key)}
+  expandable={{
+    expandedRowRender: (record) => <p style={{ margin: 0 }}>{record.description}</p>,
+    rowExpandable: (record) => record.name !== 'Not Expandable',
+  }}
+/>
+```
+
+配置类型 `ApexExpandable<Item>` 从包入口导出：
+
+| 属性 | 默认 | 说明 |
+| --- | --- | --- |
+| expandedRowRender | 必填 | `(record, index, indent, expanded) => ReactNode`；index 为当前页排序、筛选后的数据索引，indent 为 0，展开渲染时 expanded 为 true |
+| rowExpandable | 全部可展开 | `(record) => boolean`；返回 false 时隐藏入口且不渲染详情，即使键存在于展开集合中 |
+| expandedRowKeys | 内部管理 | `readonly string[]`，受控展开键，使用 getRowId 返回的字符串，而非自动读取 record.key |
+| defaultExpandedRowKeys | [] | 非受控初始展开键；传入时优先于 defaultExpandAllRows |
+| defaultExpandAllRows | false | 默认展开挂载时已有的可展开数据；后续新增或请求返回的记录不自动展开，需要时使用受控键 |
+| onExpand | 无 | `(expanded, record) => void`，用户切换一行时触发 |
+| onExpandedRowsChange | 无 | `(expandedKeys: string[]) => void`，返回切换后的完整键集合，可直接接收 React setter |
+| expandRowByClick | false | 点击行的非交互区域切换；链接、按钮、选择框、编辑器及文字选择不会触发；onRowClick 中 preventDefault 可阻止展开 |
+| showExpandColumn | true | 是否显示独立展开列；隐藏时可通过受控状态或行点击触发展开，业务应提供可用键盘操作的入口 |
+| columnWidth / columnTitle | 44 / 空 | 展开列宽度（有限正数）及表头内容 |
+| fixed | false | true 或 left 固定在左侧，right 固定在右侧，遵守现有窄容器固定列降级规则 |
+
+受控模式中，点击仅触发回调，实际状态以回传的 `expandedRowKeys` 为准。默认值只在挂载时生效；传入 `expandedRowKeys={[]}` 可明确收起全部。翻页、排序、筛选及数据暂时移除不会主动清除展开键；永久删除记录时，可由业务清理受控键。`rowExpandable` 的限制始终优先。
+
+展开内容独立于原生树形 `expanded` 状态；不参与分页条数、行选择、行号和业务总数计算。虚拟滚动保留开启，详情通过实际 DOM 高度自动测量，支持异步加载和内容高度变化。`scrollToRow` 会计入详情高度，目标仍须在当前页结果中。可访问行索引在启用 expandable 时按当前页的「数据行 + 详情行」排列。
+
+详情在收起或离开虚拟窗口时卸载，内部表单等需要保留的状态应由业务提升管理。它用于平铺数据的行详情，不代表支持树形数据或分组。文案 `locale.expansion/expandRow/collapseRow` 可单独覆盖。
 
 ### request 服务端分页
 

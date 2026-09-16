@@ -48,6 +48,31 @@
 .apex-table-row { height: var(--apex-geometry-row-height, 48px);
   }
 
+/*
+ * 详情行允许内容自然撑高，不继承普通行的固定高度和单行截断。
+ * 展开列与选择列保持相同的居中布局，按钮尺寸不影响轨道宽度。
+ */
+.apex-table-expanded-row { display: flex;
+  width: 100%;
+  }
+
+.apex-table-expanded-cell { display: flow-root;
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  }
+
+.apex-table-cell[data-apex-track='expansion'] { justify-content: center;
+  }
+
+.apex-table-expand-button { display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  }
+
 .apex-table-cell, .apex-table-header-cell { display: flex;
   align-items: center;
   flex: none;

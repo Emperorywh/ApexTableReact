@@ -8,7 +8,11 @@ import { visibleColumns } from './runtime';
  */
 export interface Track {
   key: string;
-  kind: 'column' | 'selection' | 'number';
+  /*
+   * 展开列参与统一宽度和固定偏移计算。
+   * 辅助列不进入原生业务列模型或列偏好。
+   */
+  kind: 'column' | 'selection' | 'number' | 'expansion';
   column?: RuntimeColumn;
   size: number;
   pin: false | 'start' | 'end';
@@ -16,18 +20,18 @@ export interface Track {
   offset: number;
   priority: number;
 }
-function auxiliary(kind: 'selection' | 'number', config: ApexTrack): Track {
+function auxiliary(kind: 'selection' | 'number' | 'expansion', config: ApexTrack): Track {
   const options = typeof config === 'object' ? config : {};
   const pin = options.sticky ?? (kind === 'selection' ? 'start' : false);
-  return { kind, key: `apex-aux-${kind}`, size: options.size ?? (kind === 'selection' ? 44 : 48), pin, sticky: pin, offset: 0, priority: 100 };
+  return { kind, key: `apex-aux-${kind}`, size: options.size ?? (kind === 'number' ? 48 : 44), pin, sticky: pin, offset: 0, priority: 100 };
 }
-export function calculateLayout(table: RuntimeTable, width: number, selection: ApexTrack, number: ApexTrack) {
+export function calculateLayout(table: RuntimeTable, width: number, selection: ApexTrack, number: ApexTrack, expansion: ApexTrack = false) {
   const tracks: Track[] = visibleColumns(table).map((column) => ({
     kind: 'column', key: column.id, column, size: column.getSize?.() ?? 150,
     pin: column.getIsPinned?.() ?? false, sticky: column.getIsPinned?.() ?? false,
     offset: 0, priority: column.columnDef.meta?.apex?.pinPriority ?? 0,
   }));
-  const extras = [selection ? auxiliary('selection', selection) : null, number ? auxiliary('number', number) : null].filter((track): track is Track => !!track);
+  const extras = [expansion ? auxiliary('expansion', expansion) : null, selection ? auxiliary('selection', selection) : null, number ? auxiliary('number', number) : null].filter((track): track is Track => !!track);
   tracks.unshift(...extras.filter((track) => track.pin !== 'end'));
   tracks.push(...extras.filter((track) => track.pin === 'end'));
   const sizing = table.atoms.columnSizing?.get() ?? {};

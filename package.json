@@ -1,6 +1,6 @@
 {
   "name": "apex-table-react",
-  "version": "0.1.0-rc.0",
+  "version": "0.1.0",
   "description": "基于 TanStack Table v9 封装、通过 props 配置的 React 业务表格组件",
   "type": "module",
   "main": "./dist/index.js",
@@ -61,7 +61,9 @@
     ]
   },
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "tag": "latest"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",

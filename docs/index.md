@@ -15,4 +15,4 @@ ApexTableReact 为商品、订单和配置列表提供紧凑、可定制的 Reac
 
 组件自动加载结构样式和默认主题，无需额外导入 CSS。通过 style props 配置品牌变量，通过插槽替换控件。
 
-当前 `apex-table-react@0.1.0-rc.0` 为本地候选。尚未完成正式发布验收。
+当前正式版本为 `apex-table-react@0.1.0`，通过 npm 官方源的 `latest` 标签发布。

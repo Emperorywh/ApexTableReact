@@ -7,7 +7,7 @@ nav:
 
 # 接入指南
 
-当前候选尚未公开发布，使用仓库 `pnpm pack` 生成的 tarball。基础场景只需从本包导入 `ApexTableReact`，传入 `columns`、`data` 和 `height`，无需导入 TanStack API 或样式。排序、筛选、分页、选择和列设置也通过 props 启用。最小接入见 README，完整示例见 [组件演示](/components/apex-table)。
+通过 npm 官方源安装正式版本 `apex-table-react@0.1.0`，也可使用仓库 `pnpm pack` 生成的 tarball。基础场景只需从本包导入 `ApexTableReact`，传入 `columns`、`data` 和 `height`，无需导入 TanStack API 或样式。排序、筛选、分页、选择和列设置也通过 props 启用。最小接入见 README，完整示例见 [组件演示](/components/apex-table)。
 
 ## 按顺序学习
 
